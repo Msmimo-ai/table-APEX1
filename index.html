@@ -8,8 +8,8 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: system-ui, sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; }
   .container { padding: 1.5rem; max-width: 600px; margin: 0 auto; }
-  h1 { font-size: 16px; font-weight: 500; color: #1a1a1a; margin-bottom: 1.5rem; text-align: center; }
-  .quad-wrap { display: flex; justify-content: center; align-items: center; margin: 1rem 0 1.5rem; }
+  h1 { font-size: 16px; font-weight: 500; text-align: center; margin-bottom: 1.5rem; }
+  .quad-wrap { display: flex; justify-content: center; margin: 1rem 0 1.5rem; }
   svg#quad { overflow: visible; }
   .side-btn { cursor: pointer; }
   .side-btn:hover .side-hit { opacity: 0.12; }
@@ -17,14 +17,15 @@
   .side-label { font-size: 12px; fill: #888; font-family: system-ui, sans-serif; }
   .side-value { font-size: 11px; fill: #534AB7; font-family: monospace; }
   .panel { background: #fff; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
-  .panel-title { font-size: 13px; font-weight: 500; color: #1a1a1a; margin-bottom: 0.75rem; }
+  .panel-title { font-size: 13px; font-weight: 500; margin-bottom: 0.75rem; }
   .panel-empty { font-size: 13px; color: #aaa; }
   .cam-area { position: relative; width: 100%; aspect-ratio: 4/3; background: #000; border-radius: 8px; overflow: hidden; }
   video { width: 100%; height: 100%; object-fit: cover; display: block; }
   .scan-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-  .scan-frame { width: 60%; aspect-ratio: 1; border: 2px solid rgba(127,119,221,0.9); border-radius: 8px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.4); position: relative; }
-  .scan-line { position: absolute; left: 0; right: 0; height: 2px; background: #7F77DD; animation: scan 1.6s ease-in-out infinite; }
+  .scan-frame { width: 60%; aspect-ratio: 1; border: 2px solid rgba(127,119,221,0.9); border-radius: 8px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.4); position: relative; overflow: hidden; }
+  .scan-line { position: absolute; left: 0; right: 0; height: 2px; background: #7F77DD; animation: scan 1.2s ease-in-out infinite; }
   @keyframes scan { 0%,100%{top:5%} 50%{top:90%} }
+  .found-flash { position: absolute; inset: 0; background: rgba(83,74,183,0.35); opacity: 0; transition: opacity 0.1s; border-radius: 8px; }
   .btn-row { display: flex; gap: 8px; margin-top: 0.75rem; flex-wrap: wrap; }
   button { font-size: 13px; padding: 7px 16px; border-radius: 8px; border: 0.5px solid rgba(0,0,0,0.2); background: transparent; color: #1a1a1a; cursor: pointer; }
   button:hover { background: #f0f0ee; }
@@ -35,12 +36,13 @@
   input[type=text] { flex: 1; font-size: 13px; padding: 7px 10px; border-radius: 8px; border: 0.5px solid rgba(0,0,0,0.2); background: #f5f5f3; color: #1a1a1a; outline: none; }
   input[type=text]:focus { border-color: #534AB7; }
   .tag { display: inline-block; background: #EEEDFE; color: #3C3489; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 500; }
-  .status { font-size: 12px; color: #666; margin-top: 6px; }
+  .status { font-size: 12px; color: #666; margin-top: 6px; min-height: 18px; }
   .record-list { display: flex; flex-direction: column; gap: 6px; margin-top: 0.5rem; }
   .record-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #f5f5f3; border-radius: 8px; }
   .record-side { font-size: 11px; font-weight: 500; color: #534AB7; min-width: 28px; }
   .record-val { font-size: 12px; color: #1a1a1a; flex: 1; word-break: break-all; font-family: monospace; }
   .record-del { font-size: 11px; color: #c03030; cursor: pointer; background: none; border: none; padding: 2px 6px; }
+  .fps-badge { position: absolute; top: 6px; right: 8px; background: rgba(0,0,0,0.5); color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
 </style>
 </head>
 <body>
@@ -50,10 +52,10 @@
   <div class="quad-wrap">
     <svg id="quad" width="280" height="260" viewBox="-60 -50 360 320">
       <polygon points="30,20 220,10 250,210 10,230" fill="none" stroke="#534AB7" stroke-width="2" stroke-linejoin="round"/>
-      <circle cx="30" cy="20" r="5" fill="#AFA9EC"/>
-      <circle cx="220" cy="10" r="5" fill="#AFA9EC"/>
+      <circle cx="30"  cy="20"  r="5" fill="#AFA9EC"/>
+      <circle cx="220" cy="10"  r="5" fill="#AFA9EC"/>
       <circle cx="250" cy="210" r="5" fill="#AFA9EC"/>
-      <circle cx="10" cy="230" r="5" fill="#AFA9EC"/>
+      <circle cx="10"  cy="230" r="5" fill="#AFA9EC"/>
 
       <g class="side-btn" onclick="selectSide('top')">
         <polygon class="side-hit" points="10,-15 240,-15 240,35 10,35"/>
@@ -94,14 +96,18 @@
         <video id="video" playsinline autoplay muted></video>
         <div class="scan-overlay">
           <div style="position:relative;width:60%;aspect-ratio:1">
-            <div class="scan-frame"><div class="scan-line"></div></div>
+            <div class="scan-frame">
+              <div class="scan-line"></div>
+              <div class="found-flash" id="found-flash"></div>
+            </div>
           </div>
         </div>
+        <div class="fps-badge" id="fps-badge">— fps</div>
       </div>
       <p class="status" id="scan-status"></p>
       <div class="btn-row">
         <button class="primary" id="scan-btn" onclick="startScan()">扫描二维码</button>
-        <button id="manual-btn" onclick="toggleManual()">手动输入</button>
+        <button onclick="toggleManual()">手动输入</button>
         <button class="danger" onclick="clearSide()" style="margin-left:auto">清除此边</button>
       </div>
       <div class="input-row" id="manual-row" style="display:none">
@@ -119,119 +125,175 @@
   </div>
 </div>
 
-<script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
-<script>
+<script type="module">
+import { BrowserMultiFormatReader, NotFoundException } from 'https://esm.sh/@zxing/library@0.21.3';
+
 const SIDES = {top:'上边', right:'右边', bottom:'下边', left:'左边'};
 let data = {top:null, right:null, bottom:null, left:null};
 let activeSide = null;
-let stream = null;
-let scanInterval = null;
-let canvas = document.createElement('canvas');
-let ctx = canvas.getContext('2d');
+let reader = null;
+let scanning = false;
 
-function selectSide(side) {
+// FPS tracking
+let fpsFrames = 0, fpsLast = performance.now();
+
+window.selectSide = function(side) {
   activeSide = side;
-  ['top','right','bottom','left'].forEach(s => {
-    document.getElementById('active-line-'+s).setAttribute('opacity','0');
-  });
+  ['top','right','bottom','left'].forEach(s =>
+    document.getElementById('active-line-'+s).setAttribute('opacity','0'));
   document.getElementById('active-line-'+side).setAttribute('opacity','1');
   document.getElementById('panel-title').textContent = SIDES[side] + ' — 操作';
   let tag = document.getElementById('active-tag');
-  tag.textContent = SIDES[side]; tag.style.display='';
-  document.getElementById('hint-text').style.display='none';
-  document.getElementById('scan-section').style.display='';
+  tag.textContent = SIDES[side]; tag.style.display = '';
+  document.getElementById('hint-text').style.display = 'none';
+  document.getElementById('scan-section').style.display = '';
   document.getElementById('scan-status').textContent = data[side] ? '当前值：' + data[side] : '尚未扫描';
   stopScan();
-  document.getElementById('manual-row').style.display='none';
-}
+  document.getElementById('manual-row').style.display = 'none';
+};
 
-function startScan() {
-  if (!activeSide) return;
-  document.getElementById('cam-area').style.display='';
+window.startScan = async function() {
+  if (!activeSide || scanning) return;
+  document.getElementById('cam-area').style.display = '';
   document.getElementById('scan-status').textContent = '正在启动摄像头…';
-  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})
-    .then(s => {
-      stream = s;
-      let v = document.getElementById('video');
-      v.srcObject = s; v.play();
-      document.getElementById('scan-btn').textContent = '停止扫描';
-      document.getElementById('scan-btn').onclick = stopScan;
-      document.getElementById('scan-status').textContent = '将二维码对准框内…';
-      scanInterval = setInterval(doScan, 200);
-    })
-    .catch(e => {
-      document.getElementById('scan-status').textContent = '无法访问摄像头：' + e.message;
-      document.getElementById('cam-area').style.display='none';
-    });
+
+  try {
+    reader = new BrowserMultiFormatReader();
+    // request high-res back camera, ZXing will handle it
+    const constraints = {
+      video: {
+        facingMode: 'environment',
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      }
+    };
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    const video = document.getElementById('video');
+    video.srcObject = stream;
+    await video.play();
+    scanning = true;
+    document.getElementById('scan-btn').textContent = '停止扫描';
+    document.getElementById('scan-btn').onclick = stopScan;
+    document.getElementById('scan-status').textContent = '将二维码对准框内…';
+    fpsLast = performance.now(); fpsFrames = 0;
+    decodeLoop(video, stream);
+  } catch(e) {
+    document.getElementById('scan-status').textContent = '无法访问摄像头：' + e.message;
+    document.getElementById('cam-area').style.display = 'none';
+  }
+};
+
+// Use requestAnimationFrame for maximum frame rate
+function decodeLoop(video, stream) {
+  if (!scanning) return;
+
+  // ZXing decodeFromVideoElement is callback-based; use canvas manually for rAF speed
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+  function tick() {
+    if (!scanning) return;
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      // Downscale to 640px wide for speed
+      const scale = Math.min(1, 640 / video.videoWidth);
+      canvas.width  = Math.round(video.videoWidth  * scale);
+      canvas.height = Math.round(video.videoHeight * scale);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      try {
+        const result = reader.decodeFromCanvas(canvas);
+        if (result && result.getText()) {
+          flashFound();
+          saveValue(result.getText());
+          stopScan(stream);
+          return;
+        }
+      } catch(e) {
+        // NotFoundException is normal — no QR in frame
+      }
+
+      // FPS counter
+      fpsFrames++;
+      const now = performance.now();
+      if (now - fpsLast >= 1000) {
+        document.getElementById('fps-badge').textContent = fpsFrames + ' fps';
+        fpsFrames = 0; fpsLast = now;
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
 }
 
-function doScan() {
-  let v = document.getElementById('video');
-  if (!v.videoWidth) return;
-  canvas.width = v.videoWidth; canvas.height = v.videoHeight;
-  ctx.drawImage(v,0,0);
-  let img = ctx.getImageData(0,0,canvas.width,canvas.height);
-  let result = jsQR(img.data, img.width, img.height, {inversionAttempts:'dontInvert'});
-  if (result && result.data) { saveValue(result.data); stopScan(); }
+function flashFound() {
+  const f = document.getElementById('found-flash');
+  f.style.opacity = '1';
+  setTimeout(() => f.style.opacity = '0', 300);
 }
 
-function stopScan() {
-  clearInterval(scanInterval); scanInterval = null;
-  if (stream) { stream.getTracks().forEach(t=>t.stop()); stream=null; }
-  document.getElementById('cam-area').style.display='none';
-  document.getElementById('scan-btn').textContent='扫描二维码';
-  document.getElementById('scan-btn').onclick=startScan;
-}
+window.stopScan = function(stream) {
+  scanning = false;
+  const video = document.getElementById('video');
+  if (video.srcObject) {
+    video.srcObject.getTracks().forEach(t => t.stop());
+    video.srcObject = null;
+  }
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  document.getElementById('cam-area').style.display = 'none';
+  document.getElementById('fps-badge').textContent = '— fps';
+  document.getElementById('scan-btn').textContent = '扫描二维码';
+  document.getElementById('scan-btn').onclick = startScan;
+};
 
-function toggleManual() {
-  let row = document.getElementById('manual-row');
-  row.style.display = row.style.display==='none'?'':'none';
-  if (row.style.display!=='none') document.getElementById('manual-input').focus();
-}
+window.toggleManual = function() {
+  const row = document.getElementById('manual-row');
+  row.style.display = row.style.display === 'none' ? '' : 'none';
+  if (row.style.display !== 'none') document.getElementById('manual-input').focus();
+};
 
-function saveManual() {
-  let v = document.getElementById('manual-input').value.trim();
-  if (!v||!activeSide) return;
+window.saveManual = function() {
+  const v = document.getElementById('manual-input').value.trim();
+  if (!v || !activeSide) return;
   saveValue(v);
-  document.getElementById('manual-input').value='';
-  document.getElementById('manual-row').style.display='none';
-}
+  document.getElementById('manual-input').value = '';
+  document.getElementById('manual-row').style.display = 'none';
+};
 
 function saveValue(val) {
   data[activeSide] = val;
-  let short = val.length>14 ? val.slice(0,12)+'…' : val;
-  document.getElementById('val-'+activeSide).textContent = short;
+  const short = val.length > 14 ? val.slice(0, 12) + '…' : val;
+  document.getElementById('val-' + activeSide).textContent = short;
   document.getElementById('scan-status').textContent = '已保存：' + val;
   renderRecords();
 }
 
-function clearSide() {
+window.clearSide = function() {
   if (!activeSide) return;
-  data[activeSide]=null;
-  document.getElementById('val-'+activeSide).textContent='—';
-  document.getElementById('scan-status').textContent='已清除';
+  data[activeSide] = null;
+  document.getElementById('val-' + activeSide).textContent = '—';
+  document.getElementById('scan-status').textContent = '已清除';
   renderRecords();
-}
+};
+
+window.deleteRecord = function(side) {
+  data[side] = null;
+  document.getElementById('val-' + side).textContent = '—';
+  if (activeSide === side) document.getElementById('scan-status').textContent = '已清除';
+  renderRecords();
+};
 
 function renderRecords() {
-  let list = document.getElementById('record-list');
-  let entries = Object.entries(data).filter(([,v])=>v);
-  if (!entries.length) { list.innerHTML='<p class="panel-empty">暂无记录</p>'; return; }
-  list.innerHTML = entries.map(([s,v])=>`
+  const list = document.getElementById('record-list');
+  const entries = Object.entries(data).filter(([,v]) => v);
+  if (!entries.length) { list.innerHTML = '<p class="panel-empty">暂无记录</p>'; return; }
+  list.innerHTML = entries.map(([s,v]) => `
     <div class="record-item">
       <span class="record-side">${SIDES[s]}</span>
       <span class="record-val">${v}</span>
       <button class="record-del" onclick="deleteRecord('${s}')">删除</button>
     </div>`).join('');
 }
-
-function deleteRecord(side) {
-  data[side]=null;
-  document.getElementById('val-'+side).textContent='—';
-  if (activeSide===side) document.getElementById('scan-status').textContent='已清除';
-  renderRecords();
-}
 </script>
 </body>
 </html>
-<!-- test-->
+<!-- test -->
