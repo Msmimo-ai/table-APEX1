@@ -3,29 +3,97 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>四边形二维码记录</title>
+<title>APEX 1 — 二维码记录</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: system-ui, sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; }
-  .container { padding: 1.5rem; max-width: 600px; margin: 0 auto; }
-  h1 { font-size: 16px; font-weight: 500; text-align: center; margin-bottom: 1.5rem; }
-  .quad-wrap { display: flex; justify-content: center; margin: 1rem 0 1.5rem; }
-  svg#quad { overflow: visible; }
-  .side-btn { cursor: pointer; }
-  .side-btn:hover .side-hit { opacity: 0.12; }
-  .side-hit { opacity: 0; fill: #7F77DD; transition: opacity 0.15s; }
-  .side-label { font-size: 12px; fill: #888; font-family: system-ui, sans-serif; }
-  .side-value { font-size: 11px; fill: #534AB7; font-family: monospace; }
+  .container { padding: 1.2rem; max-width: 680px; margin: 0 auto; }
+  h1 { font-size: 15px; font-weight: 500; text-align: center; margin-bottom: 1.2rem; }
+
+  /* ── Table layout ── */
+  .table-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 1.2rem; }
+  .label-apex { background: #aaff00; border: 1.5px solid #333; font-size: 12px; font-weight: 500; padding: 4px 8px; white-space: nowrap; border-radius: 3px; }
+  .table-outer { flex: 1; }
+  .label-nord { background: #ffe500; border: 1.5px solid #333; font-size: 12px; font-weight: 500; padding: 3px 10px; text-align: center; border-radius: 3px; margin-bottom: 4px; width: fit-content; margin-left: auto; margin-right: auto; }
+  .label-sud  { background: #ffe500; border: 1.5px solid #333; font-size: 12px; font-weight: 500; padding: 3px 10px; text-align: center; border-radius: 3px; margin-top: 4px; width: fit-content; margin-left: auto; margin-right: auto; }
+  .table-box { border: 2px solid #333; background: #fff; padding: 8px 6px; display: flex; gap: 6px; justify-content: center; }
+
+  /* ── Seat ── */
+  .seat { display: flex; flex-direction: column; align-items: center; gap: 0; width: 88px; }
+  .seat-num { font-size: 10px; color: #888; margin-bottom: 2px; }
+
+  /* The 3×3 grid for top/left/center/right/bottom */
+  .seat-grid {
+    display: grid;
+    grid-template-columns: 14px 1fr 14px;
+    grid-template-rows: 14px 1fr 14px;
+    width: 80px;
+    height: 104px;
+    position: relative;
+  }
+
+  /* Outer frame visual */
+  .seat-frame {
+    position: absolute;
+    inset: 0;
+    border: 2px solid #888;
+    border-radius: 3px;
+    pointer-events: none;
+    background: transparent;
+  }
+  .seat-inner {
+    position: absolute;
+    inset: 14px;
+    border: 2px solid #aaa;
+    border-radius: 2px;
+    pointer-events: none;
+    background: #e8e8e8;
+  }
+
+  /* Clickable side strips */
+  .side-strip {
+    position: absolute;
+    cursor: pointer;
+    z-index: 2;
+    transition: background 0.15s;
+    border-radius: 2px;
+  }
+  .side-strip:hover { background: rgba(83,74,183,0.18) !important; }
+  .side-strip.active { background: rgba(83,74,183,0.32) !important; outline: 2px solid #534AB7; }
+  .side-strip.has-data { background: rgba(83,74,183,0.10); }
+
+  /* top strip */
+  .strip-top    { top: 0;    left: 0;    right: 0;  height: 14px; }
+  /* bottom strip */
+  .strip-bottom { bottom: 0; left: 0;    right: 0;  height: 14px; }
+  /* left strip */
+  .strip-left   { top: 14px; left: 0;   width: 14px; bottom: 14px; }
+  /* right strip */
+  .strip-right  { top: 14px; right: 0;  width: 14px; bottom: 14px; }
+
+  /* center label */
+  .seat-center { position: absolute; inset: 14px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 500; color: #555; pointer-events: none; z-index: 1; }
+
+  /* data dot */
+  .data-dot { position: absolute; width: 5px; height: 5px; background: #534AB7; border-radius: 50%; pointer-events: none; z-index: 3; }
+  .dot-top    { top: 4px;    left: 50%; transform: translateX(-50%); }
+  .dot-bottom { bottom: 4px; left: 50%; transform: translateX(-50%); }
+  .dot-left   { left: 4px;   top: 50%;  transform: translateY(-50%); }
+  .dot-right  { right: 4px;  top: 50%;  transform: translateY(-50%); }
+
+  /* ── Panel ── */
   .panel { background: #fff; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
   .panel-title { font-size: 13px; font-weight: 500; margin-bottom: 0.75rem; }
   .panel-empty { font-size: 13px; color: #aaa; }
+  .tag { display: inline-block; background: #EEEDFE; color: #3C3489; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 500; }
   .cam-area { position: relative; width: 100%; aspect-ratio: 4/3; background: #000; border-radius: 8px; overflow: hidden; }
   video { width: 100%; height: 100%; object-fit: cover; display: block; }
   .scan-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
   .scan-frame { width: 60%; aspect-ratio: 1; border: 2px solid rgba(127,119,221,0.9); border-radius: 8px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.4); position: relative; overflow: hidden; }
-  .scan-line { position: absolute; left: 0; right: 0; height: 2px; background: #7F77DD; animation: scan 1.2s ease-in-out infinite; }
-  @keyframes scan { 0%,100%{top:5%} 50%{top:90%} }
-  .found-flash { position: absolute; inset: 0; background: rgba(83,74,183,0.35); opacity: 0; transition: opacity 0.1s; border-radius: 8px; }
+  .scan-line { position: absolute; left: 0; right: 0; height: 2px; background: #7F77DD; animation: scanline 1.2s ease-in-out infinite; }
+  @keyframes scanline { 0%,100%{top:5%} 50%{top:90%} }
+  .found-flash { position: absolute; inset: 0; background: rgba(83,74,183,0.35); opacity: 0; transition: opacity 0.1s; }
+  .fps-badge { position: absolute; top: 6px; right: 8px; background: rgba(0,0,0,0.5); color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
   .btn-row { display: flex; gap: 8px; margin-top: 0.75rem; flex-wrap: wrap; }
   button { font-size: 13px; padding: 7px 16px; border-radius: 8px; border: 0.5px solid rgba(0,0,0,0.2); background: transparent; color: #1a1a1a; cursor: pointer; }
   button:hover { background: #f0f0ee; }
@@ -35,64 +103,41 @@
   .input-row { display: flex; gap: 8px; margin-top: 0.75rem; }
   input[type=text] { flex: 1; font-size: 13px; padding: 7px 10px; border-radius: 8px; border: 0.5px solid rgba(0,0,0,0.2); background: #f5f5f3; color: #1a1a1a; outline: none; }
   input[type=text]:focus { border-color: #534AB7; }
-  .tag { display: inline-block; background: #EEEDFE; color: #3C3489; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 500; }
   .status { font-size: 12px; color: #666; margin-top: 6px; min-height: 18px; }
   .record-list { display: flex; flex-direction: column; gap: 6px; margin-top: 0.5rem; }
   .record-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #f5f5f3; border-radius: 8px; }
-  .record-side { font-size: 11px; font-weight: 500; color: #534AB7; min-width: 28px; white-space: nowrap; }
+  .record-seat { font-size: 11px; font-weight: 500; color: #534AB7; min-width: 48px; white-space: nowrap; }
   .record-val { font-size: 12px; color: #1a1a1a; flex: 1; word-break: break-all; font-family: monospace; }
   .record-time { font-size: 11px; color: #aaa; white-space: nowrap; }
   .record-del { font-size: 11px; color: #c03030; cursor: pointer; background: none; border: none; padding: 2px 6px; }
-  .fps-badge { position: absolute; top: 6px; right: 8px; background: rgba(0,0,0,0.5); color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
-  .sync-status { font-size: 11px; color: #aaa; text-align: right; margin-bottom: 6px; }
+  .sync-status { font-size: 11px; color: #aaa; }
   .sync-ok { color: #3a7d44; }
   .sync-err { color: #c03030; }
 </style>
 </head>
 <body>
 <div class="container">
-  <h1>四边形二维码记录</h1>
+  <h1>APEX 1 — 二维码记录</h1>
 
-  <div class="quad-wrap">
-    <svg id="quad" width="280" height="260" viewBox="-60 -50 360 320">
-      <polygon points="30,20 220,10 250,210 10,230" fill="none" stroke="#534AB7" stroke-width="2" stroke-linejoin="round"/>
-      <circle cx="30"  cy="20"  r="5" fill="#AFA9EC"/>
-      <circle cx="220" cy="10"  r="5" fill="#AFA9EC"/>
-      <circle cx="250" cy="210" r="5" fill="#AFA9EC"/>
-      <circle cx="10"  cy="230" r="5" fill="#AFA9EC"/>
-      <g class="side-btn" onclick="selectSide('top')">
-        <polygon class="side-hit" points="10,-15 240,-15 240,35 10,35"/>
-        <text class="side-label" x="125" y="-8" text-anchor="middle">上边</text>
-        <text class="side-value" id="val-top" x="125" y="6" text-anchor="middle">—</text>
-      </g>
-      <g class="side-btn" onclick="selectSide('right')">
-        <polygon class="side-hit" points="205,-10 295,-10 295,230 205,230"/>
-        <text class="side-label" x="280" y="110" text-anchor="middle">右边</text>
-        <text class="side-value" id="val-right" x="280" y="124" text-anchor="middle">—</text>
-      </g>
-      <g class="side-btn" onclick="selectSide('bottom')">
-        <polygon class="side-hit" points="-10,195 275,195 275,255 -10,255"/>
-        <text class="side-label" x="130" y="265" text-anchor="middle">下边</text>
-        <text class="side-value" id="val-bottom" x="130" y="278" text-anchor="middle">—</text>
-      </g>
-      <g class="side-btn" onclick="selectSide('left')">
-        <polygon class="side-hit" points="-55,-5 25,-5 25,245 -55,245"/>
-        <text class="side-label" x="-38" y="115" text-anchor="middle">左边</text>
-        <text class="side-value" id="val-left" x="-38" y="129" text-anchor="middle">—</text>
-      </g>
-      <line id="active-line-top"    x1="30"  y1="20"  x2="220" y2="10"  stroke="#7F77DD" stroke-width="4" opacity="0" stroke-linecap="round"/>
-      <line id="active-line-right"  x1="220" y1="10"  x2="250" y2="210" stroke="#7F77DD" stroke-width="4" opacity="0" stroke-linecap="round"/>
-      <line id="active-line-bottom" x1="10"  y1="230" x2="250" y2="210" stroke="#7F77DD" stroke-width="4" opacity="0" stroke-linecap="round"/>
-      <line id="active-line-left"   x1="30"  y1="20"  x2="10"  y2="230" stroke="#7F77DD" stroke-width="4" opacity="0" stroke-linecap="round"/>
-    </svg>
+  <!-- Table visual -->
+  <div class="table-wrap">
+    <div class="label-apex">APEX 1</div>
+    <div class="table-outer">
+      <div class="label-nord">NORD</div>
+      <div class="table-box" id="table-box">
+        <!-- seats generated by JS -->
+      </div>
+      <div class="label-sud">SUD</div>
+    </div>
   </div>
 
+  <!-- Action panel -->
   <div class="panel">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.75rem;">
-      <span class="panel-title" id="panel-title">点击四边形的任意一边开始</span>
+      <span class="panel-title" id="panel-title">点击座位的任意一面开始</span>
       <span class="tag" id="active-tag" style="display:none"></span>
     </div>
-    <p class="panel-empty" id="hint-text">请先选择一条边</p>
+    <p class="panel-empty" id="hint-text">请先选择一个面</p>
     <div id="scan-section" style="display:none">
       <div class="cam-area" id="cam-area" style="display:none">
         <video id="video" playsinline autoplay muted></video>
@@ -110,7 +155,7 @@
       <div class="btn-row">
         <button class="primary" id="scan-btn" onclick="startScan()">扫描二维码</button>
         <button onclick="toggleManual()">手动输入</button>
-        <button class="danger" onclick="clearSide()" style="margin-left:auto">清除此边</button>
+        <button class="danger" onclick="clearActive()" style="margin-left:auto">清除此面</button>
       </div>
       <div class="input-row" id="manual-row" style="display:none">
         <input type="text" id="manual-input" placeholder="输入二维码内容..."/>
@@ -119,6 +164,7 @@
     </div>
   </div>
 
+  <!-- History -->
   <div class="panel">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
       <div class="panel-title" style="margin-bottom:0">历史记录</div>
@@ -130,197 +176,257 @@
   </div>
 </div>
 
-<script type="module">
-import { BrowserMultiFormatReader } from 'https://esm.sh/@zxing/library@0.21.3';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
 const SUPABASE_URL = 'https://puydipjoykvwzpwnjedi.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_yZeJG14bj8esqS9D743ymA_1eYH64CG';
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const SIDES = {top:'上边', right:'右边', bottom:'下边', left:'左边'};
-let activeSide = null;
+const SEAT_COUNT = 5;
+const FACES = ['top','right','bottom','left'];
+const FACE_LABEL = {top:'上', right:'右', bottom:'下', left:'左'};
+
+// activeKey = "seat{n}_{face}", e.g. "seat3_top"
+let activeKey = null;
 let scanning = false;
-let reader = new BrowserMultiFormatReader();
+let rafId = null;
+let currentStream = null;
 let fpsFrames = 0, fpsLast = performance.now();
+const canvas = document.createElement('canvas');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-// 页面加载时拉取历史记录
-loadRecords();
+// data store: key -> {value, id}
+const dataStore = {};
 
+// Build table UI
+function buildTable() {
+  const box = document.getElementById('table-box');
+  box.innerHTML = '';
+  for (let s = 1; s <= SEAT_COUNT; s++) {
+    const seat = document.createElement('div');
+    seat.className = 'seat';
+    seat.innerHTML = `
+      <div class="seat-num">座位 ${s}</div>
+      <div class="seat-grid" id="seat-grid-${s}">
+        <div class="seat-frame"></div>
+        <div class="seat-inner"></div>
+        <div class="seat-center">${s}</div>
+        ${FACES.map(f => `
+          <div class="side-strip strip-${f}" id="strip-${s}-${f}" onclick="selectFace(${s},'${f}')"></div>
+          <div class="data-dot dot-${f}" id="dot-${s}-${f}" style="display:none"></div>
+        `).join('')}
+      </div>`;
+    box.appendChild(seat);
+  }
+}
+
+function selectFace(seat, face) {
+  // deactivate previous
+  if (activeKey) {
+    const [ps, pf] = parseKey(activeKey);
+    const el = document.getElementById(`strip-${ps}-${pf}`);
+    if (el) el.classList.remove('active');
+  }
+  activeKey = `seat${seat}_${face}`;
+  const strip = document.getElementById(`strip-${seat}-${face}`);
+  if (strip) strip.classList.add('active');
+
+  const label = `座位${seat} · ${FACE_LABEL[face]}面`;
+  document.getElementById('panel-title').textContent = label + ' — 操作';
+  document.getElementById('active-tag').textContent = label;
+  document.getElementById('active-tag').style.display = '';
+  document.getElementById('hint-text').style.display = 'none';
+  document.getElementById('scan-section').style.display = '';
+  const cur = dataStore[activeKey];
+  document.getElementById('scan-status').textContent = cur ? '当前值：' + cur.value : '尚未记录';
+  stopScan();
+  document.getElementById('manual-row').style.display = 'none';
+}
+
+function parseKey(key) {
+  const m = key.match(/^seat(\d+)_(\w+)$/);
+  return [m[1], m[2]];
+}
+
+// ── Supabase ──
 async function loadRecords() {
   setSyncStatus('同步中…', '');
-  const { data, error } = await supabase
-    .from('scans')
-    .select('*')
-    .order('scanned_at', { ascending: false })
-    .limit(200);
+  const { data, error } = await sb.from('scans').select('*').order('scanned_at', { ascending: false }).limit(500);
   if (error) { setSyncStatus('加载失败', 'err'); return; }
   setSyncStatus('已同步', 'ok');
-  renderRecords(data || []);
-  // 更新四边形显示最新各边的值
-  const latest = {};
-  (data || []).forEach(r => { if (!latest[r.side]) latest[r.side] = r.value; });
-  Object.entries(latest).forEach(([s, v]) => {
-    const short = v.length > 14 ? v.slice(0,12)+'…' : v;
-    const el = document.getElementById('val-'+s);
-    if (el) el.textContent = short;
+  // Fill dataStore with latest per key
+  Object.keys(dataStore).forEach(k => delete dataStore[k]);
+  (data || []).forEach(r => {
+    if (!dataStore[r.side]) dataStore[r.side] = { value: r.value, id: r.id };
   });
+  updateDots();
+  renderRecords(data || []);
+}
+
+function updateDots() {
+  for (let s = 1; s <= SEAT_COUNT; s++) {
+    FACES.forEach(f => {
+      const key = `seat${s}_${f}`;
+      const dot = document.getElementById(`dot-${s}-${f}`);
+      const strip = document.getElementById(`strip-${s}-${f}`);
+      if (!dot || !strip) return;
+      if (dataStore[key]) {
+        dot.style.display = '';
+        strip.classList.add('has-data');
+      } else {
+        dot.style.display = 'none';
+        strip.classList.remove('has-data');
+      }
+    });
+  }
 }
 
 function setSyncStatus(text, type) {
   const el = document.getElementById('sync-status');
   el.textContent = text;
-  el.className = 'sync-status' + (type === 'ok' ? ' sync-ok' : type === 'err' ? ' sync-err' : '');
+  el.className = 'sync-status' + (type==='ok' ? ' sync-ok' : type==='err' ? ' sync-err' : '');
 }
 
-window.selectSide = function(side) {
-  activeSide = side;
-  ['top','right','bottom','left'].forEach(s =>
-    document.getElementById('active-line-'+s).setAttribute('opacity','0'));
-  document.getElementById('active-line-'+side).setAttribute('opacity','1');
-  document.getElementById('panel-title').textContent = SIDES[side] + ' — 操作';
-  const tag = document.getElementById('active-tag');
-  tag.textContent = SIDES[side]; tag.style.display = '';
-  document.getElementById('hint-text').style.display = 'none';
-  document.getElementById('scan-section').style.display = '';
-  document.getElementById('scan-status').textContent = '选择操作';
-  stopScan();
-  document.getElementById('manual-row').style.display = 'none';
-};
-
-window.startScan = async function() {
-  if (!activeSide || scanning) return;
+// ── Scan ──
+async function startScan() {
+  if (!activeKey || scanning) return;
   document.getElementById('cam-area').style.display = '';
   document.getElementById('scan-status').textContent = '正在启动摄像头…';
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    currentStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
     });
     const video = document.getElementById('video');
-    video.srcObject = stream;
+    video.srcObject = currentStream;
     await video.play();
     scanning = true;
     document.getElementById('scan-btn').textContent = '停止扫描';
     document.getElementById('scan-btn').onclick = stopScan;
     document.getElementById('scan-status').textContent = '将二维码对准框内…';
     fpsLast = performance.now(); fpsFrames = 0;
-    decodeLoop(video, stream);
+    tick(video);
   } catch(e) {
-    document.getElementById('scan-status').textContent = '无法访问摄像头：' + e.message;
+    document.getElementById('scan-status').textContent = '摄像头错误：' + e.message;
     document.getElementById('cam-area').style.display = 'none';
   }
-};
+}
 
-function decodeLoop(video, stream) {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  function tick() {
-    if (!scanning) return;
-    if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      const scale = Math.min(1, 640 / video.videoWidth);
-      canvas.width  = Math.round(video.videoWidth  * scale);
-      canvas.height = Math.round(video.videoHeight * scale);
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      try {
-        const result = reader.decodeFromCanvas(canvas);
-        if (result && result.getText()) {
-          flashFound();
-          stopScan(stream);
-          saveValue(result.getText());
-          return;
-        }
-      } catch(e) {}
-      fpsFrames++;
-      const now = performance.now();
-      if (now - fpsLast >= 1000) {
-        document.getElementById('fps-badge').textContent = fpsFrames + ' fps';
-        fpsFrames = 0; fpsLast = now;
-      }
+function tick(video) {
+  if (!scanning) return;
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    const scale = Math.min(1, 640 / (video.videoWidth || 640));
+    const w = Math.round((video.videoWidth  || 640) * scale);
+    const h = Math.round((video.videoHeight || 480) * scale);
+    if (canvas.width !== w)  canvas.width  = w;
+    if (canvas.height !== h) canvas.height = h;
+    ctx.drawImage(video, 0, 0, w, h);
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const result = jsQR(imageData.data, w, h, { inversionAttempts: 'attemptBoth' });
+    if (result && result.data) {
+      document.getElementById('found-flash').style.opacity = '1';
+      setTimeout(() => { document.getElementById('found-flash').style.opacity = '0'; }, 250);
+      stopScan();
+      saveValue(result.data);
+      return;
     }
-    requestAnimationFrame(tick);
+    fpsFrames++;
+    const now = performance.now();
+    if (now - fpsLast >= 1000) {
+      document.getElementById('fps-badge').textContent = fpsFrames + ' fps';
+      fpsFrames = 0; fpsLast = now;
+    }
   }
-  requestAnimationFrame(tick);
+  rafId = requestAnimationFrame(() => tick(video));
 }
 
-function flashFound() {
-  const f = document.getElementById('found-flash');
-  f.style.opacity = '1';
-  setTimeout(() => f.style.opacity = '0', 300);
-}
-
-window.stopScan = function(stream) {
+function stopScan() {
   scanning = false;
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  if (currentStream) { currentStream.getTracks().forEach(t => t.stop()); currentStream = null; }
   const video = document.getElementById('video');
-  if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
-  if (stream && stream.getTracks) stream.getTracks().forEach(t => t.stop());
+  if (video) video.srcObject = null;
   document.getElementById('cam-area').style.display = 'none';
   document.getElementById('fps-badge').textContent = '— fps';
   document.getElementById('scan-btn').textContent = '扫描二维码';
   document.getElementById('scan-btn').onclick = startScan;
-};
+}
 
-window.toggleManual = function() {
+function toggleManual() {
   const row = document.getElementById('manual-row');
   row.style.display = row.style.display === 'none' ? '' : 'none';
   if (row.style.display !== 'none') document.getElementById('manual-input').focus();
-};
+}
 
-window.saveManual = function() {
+function saveManual() {
   const v = document.getElementById('manual-input').value.trim();
-  if (!v || !activeSide) return;
+  if (!v || !activeKey) return;
   saveValue(v);
   document.getElementById('manual-input').value = '';
   document.getElementById('manual-row').style.display = 'none';
-};
+}
 
 async function saveValue(val) {
   document.getElementById('scan-status').textContent = '保存中…';
-  const short = val.length > 14 ? val.slice(0,12)+'…' : val;
-  document.getElementById('val-'+activeSide).textContent = short;
-  const { error } = await supabase.from('scans').insert({
-    side: activeSide,
+  const { data, error } = await sb.from('scans').insert({
+    side: activeKey,
     value: val,
     scanned_at: new Date().toISOString()
-  });
+  }).select().single();
   if (error) {
     document.getElementById('scan-status').textContent = '保存失败：' + error.message;
   } else {
+    dataStore[activeKey] = { value: val, id: data.id };
     document.getElementById('scan-status').textContent = '已保存：' + val;
+    updateDots();
     loadRecords();
   }
 }
 
-window.clearSide = async function() {
-  if (!activeSide) return;
+async function clearActive() {
+  if (!activeKey) return;
   document.getElementById('scan-status').textContent = '清除中…';
-  const { error } = await supabase.from('scans').delete().eq('side', activeSide);
-  if (error) {
-    document.getElementById('scan-status').textContent = '清除失败：' + error.message;
-  } else {
-    document.getElementById('val-'+activeSide).textContent = '—';
-    document.getElementById('scan-status').textContent = '已清除';
-    loadRecords();
-  }
-};
+  await sb.from('scans').delete().eq('side', activeKey);
+  delete dataStore[activeKey];
+  document.getElementById('scan-status').textContent = '已清除';
+  updateDots();
+  loadRecords();
+}
 
-window.deleteRecord = async function(id, side) {
-  const { error } = await supabase.from('scans').delete().eq('id', id);
-  if (!error) loadRecords();
-};
+async function deleteRecord(id, key) {
+  await sb.from('scans').delete().eq('id', id);
+  if (dataStore[key] && dataStore[key].id === id) delete dataStore[key];
+  updateDots();
+  loadRecords();
+}
 
 function renderRecords(records) {
   const list = document.getElementById('record-list');
   if (!records.length) { list.innerHTML = '<p class="panel-empty">暂无记录</p>'; return; }
   list.innerHTML = records.map(r => {
+    const m = String(r.side).match(/^seat(\d+)_(\w+)$/);
+    const label = m ? `座位${m[1]} · ${FACE_LABEL[m[2]]||m[2]}面` : r.side;
     const time = new Date(r.scanned_at).toLocaleString('zh-CN', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
     return `<div class="record-item">
-      <span class="record-side">${SIDES[r.side] || r.side}</span>
+      <span class="record-seat">${label}</span>
       <span class="record-val">${r.value}</span>
       <span class="record-time">${time}</span>
       <button class="record-del" onclick="deleteRecord('${r.id}','${r.side}')">删除</button>
     </div>`;
   }).join('');
 }
+
+// Init
+buildTable();
+loadRecords();
+
+window.selectFace = selectFace;
+window.startScan = startScan;
+window.stopScan = stopScan;
+window.toggleManual = toggleManual;
+window.saveManual = saveManual;
+window.clearActive = clearActive;
+window.deleteRecord = deleteRecord;
 </script>
 </body>
 </html>
