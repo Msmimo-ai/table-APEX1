@@ -1,0 +1,14 @@
+# .gitignore file
+
+# Ignore Node.js dependencies
+node_modules/
+
+# Ignore build output
+/dist/
+
+# Ignore environment configuration
+.env
+
+# Ignore IDE files
+.idea/
+.vscode/
