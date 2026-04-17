@@ -6,38 +6,131 @@
 <title>APEX 1 — 二维码记录</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: system-ui, sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; }
-  .container { padding: 1.2rem; max-width: 680px; margin: 0 auto; }
-  h1 { font-size: 15px; font-weight: 500; text-align: center; margin-bottom: 1.2rem; }
-  .table-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 1.2rem; }
-  .label-apex { background: #aaff00; border: 1.5px solid #333; font-size: 12px; font-weight: 500; padding: 4px 8px; white-space: nowrap; border-radius: 3px; }
+  body { font-family: system-ui, sans-serif; background: #f0efe8; color: #1a1a1a; min-height: 100vh; }
+  .container { padding: 1.2rem; max-width: 700px; margin: 0 auto; }
+  h1 { font-size: 15px; font-weight: 500; text-align: center; margin-bottom: 1.2rem; letter-spacing: 0.03em; color: #333; }
+
+  /* ── Table layout ── */
+  .table-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 1.4rem; }
+  .label-apex {
+    background: #aaff00; border: 2px solid #333;
+    font-size: 12px; font-weight: 700; padding: 5px 10px;
+    white-space: nowrap; border-radius: 3px; letter-spacing: 0.05em;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
+  }
   .table-outer { flex: 1; }
-  .label-nord { background: #ffe500; border: 1.5px solid #333; font-size: 12px; font-weight: 500; padding: 3px 10px; text-align: center; border-radius: 3px; margin-bottom: 4px; width: fit-content; margin-left: auto; margin-right: auto; }
-  .label-sud  { background: #ffe500; border: 1.5px solid #333; font-size: 12px; font-weight: 500; padding: 3px 10px; text-align: center; border-radius: 3px; margin-top: 4px; width: fit-content; margin-left: auto; margin-right: auto; }
-  .table-box { border: 2px solid #333; background: #fff; padding: 8px 6px; display: flex; gap: 6px; justify-content: center; }
-  .seat { display: flex; flex-direction: column; align-items: center; gap: 0; width: 88px; }
-  .seat-num { font-size: 10px; color: #888; margin-bottom: 2px; }
-  .seat-grid { display: grid; grid-template-columns: 14px 1fr 14px; grid-template-rows: 14px 1fr 14px; width: 80px; height: 104px; position: relative; }
-  .seat-frame { position: absolute; inset: 0; border: 2px solid #888; border-radius: 3px; pointer-events: none; background: transparent; }
-  .seat-inner { position: absolute; inset: 14px; border: 2px solid #aaa; border-radius: 2px; pointer-events: none; background: #e8e8e8; }
-  .side-strip { position: absolute; cursor: pointer; z-index: 2; transition: background 0.15s; border-radius: 2px; }
-  .side-strip:hover { background: rgba(83,74,183,0.18) !important; }
-  .side-strip.active { background: rgba(83,74,183,0.32) !important; outline: 2px solid #534AB7; }
-  .side-strip.has-data { background: rgba(83,74,183,0.10); }
-  .strip-top    { top: 0;    left: 0;   right: 0;  height: 14px; }
-  .strip-bottom { bottom: 0; left: 0;   right: 0;  height: 14px; }
+  .label-nord, .label-sud {
+    background: #ffe500; border: 2px solid #333;
+    font-size: 12px; font-weight: 700; padding: 3px 14px;
+    text-align: center; border-radius: 3px; letter-spacing: 0.05em;
+    width: fit-content; margin-left: auto; margin-right: auto;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.12);
+  }
+  .label-nord { margin-bottom: 6px; }
+  .label-sud  { margin-top: 6px; }
+
+  .table-box {
+    border: 3px solid #555;
+    background: #e8e8e8;
+    padding: 10px 8px;
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    border-radius: 4px;
+    box-shadow: inset 0 1px 4px rgba(0,0,0,0.10);
+  }
+
+  /* ── Seat ── */
+  .seat { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .seat-num {
+    font-size: 11px; font-weight: 600; color: #555;
+    background: #fff; border: 1px solid #ccc;
+    border-radius: 10px; padding: 1px 7px;
+    letter-spacing: 0.02em;
+  }
+
+  .seat-grid {
+    width: 76px;
+    height: 100px;
+    position: relative;
+  }
+
+  /* Outer gray frame */
+  .frame-outer {
+    position: absolute;
+    inset: 0;
+    background: #b0b0b0;
+    border: 2px solid #888;
+    border-radius: 4px;
+    pointer-events: none;
+  }
+  /* Inner bevel — lighter gray */
+  .frame-bevel {
+    position: absolute;
+    inset: 5px;
+    background: #d0d0d0;
+    border-radius: 3px;
+    pointer-events: none;
+  }
+  /* White center */
+  .frame-center {
+    position: absolute;
+    inset: 14px;
+    background: #ffffff;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 600;
+    color: #777;
+    pointer-events: none;
+  }
+
+  /* Clickable side strips — sit above frames */
+  .side-strip {
+    position: absolute;
+    cursor: pointer;
+    z-index: 4;
+    border-radius: 2px;
+    transition: background 0.12s;
+  }
+  .strip-top    { top: 0;    left: 0;   right: 0;    height: 14px; }
+  .strip-bottom { bottom: 0; left: 0;   right: 0;    height: 14px; }
   .strip-left   { top: 14px; left: 0;   width: 14px; bottom: 14px; }
   .strip-right  { top: 14px; right: 0;  width: 14px; bottom: 14px; }
-  .seat-center { position: absolute; inset: 14px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 500; color: #555; pointer-events: none; z-index: 1; }
-  .data-dot { position: absolute; width: 5px; height: 5px; background: #534AB7; border-radius: 50%; pointer-events: none; z-index: 3; }
-  .dot-top    { top: 4px;    left: 50%; transform: translateX(-50%); }
-  .dot-bottom { bottom: 4px; left: 50%; transform: translateX(-50%); }
-  .dot-left   { left: 4px;   top: 50%;  transform: translateY(-50%); }
-  .dot-right  { right: 4px;  top: 50%;  transform: translateY(-50%); }
-  .panel { background: #fff; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+
+  .side-strip:hover       { background: rgba(83,74,183,0.22); }
+  .side-strip.active      { background: rgba(83,74,183,0.38); outline: 2px solid #534AB7; outline-offset: -1px; }
+  .side-strip.has-data    { background: rgba(83,74,183,0.12); }
+
+  /* Data indicator dot */
+  .data-dot {
+    position: absolute;
+    width: 6px; height: 6px;
+    background: #534AB7;
+    border-radius: 50%;
+    border: 1px solid #fff;
+    pointer-events: none;
+    z-index: 5;
+  }
+  .dot-top    { top: 3px;    left: 50%; transform: translateX(-50%); }
+  .dot-bottom { bottom: 3px; left: 50%; transform: translateX(-50%); }
+  .dot-left   { left: 3px;   top: 50%;  transform: translateY(-50%); }
+  .dot-right  { right: 3px;  top: 50%;  transform: translateY(-50%); }
+
+  /* ── Panel ── */
+  .panel {
+    background: #fff;
+    border: 0.5px solid rgba(0,0,0,0.12);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
   .panel-title { font-size: 13px; font-weight: 500; margin-bottom: 0.75rem; }
   .panel-empty { font-size: 13px; color: #aaa; }
-  .tag { display: inline-block; background: #EEEDFE; color: #3C3489; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 500; }
+  .tag { display: inline-block; background: #EEEDFE; color: #3C3489; font-size: 11px; padding: 2px 9px; border-radius: 999px; font-weight: 500; }
   .cam-area { position: relative; width: 100%; aspect-ratio: 4/3; background: #000; border-radius: 8px; overflow: hidden; }
   video { width: 100%; height: 100%; object-fit: cover; display: block; }
   .scan-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
@@ -56,9 +149,9 @@
   input[type=text] { flex: 1; font-size: 13px; padding: 7px 10px; border-radius: 8px; border: 0.5px solid rgba(0,0,0,0.2); background: #f5f5f3; color: #1a1a1a; outline: none; }
   input[type=text]:focus { border-color: #534AB7; }
   .status { font-size: 12px; color: #666; margin-top: 6px; min-height: 18px; }
-  .record-list { display: flex; flex-direction: column; gap: 6px; margin-top: 0.5rem; }
+  .record-list { display: flex; flex-direction: column; gap: 6px; margin-top: 0.5rem; max-height: 320px; overflow-y: auto; }
   .record-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #f5f5f3; border-radius: 8px; }
-  .record-seat { font-size: 11px; font-weight: 500; color: #534AB7; min-width: 48px; white-space: nowrap; }
+  .record-seat { font-size: 11px; font-weight: 500; color: #534AB7; min-width: 52px; white-space: nowrap; }
   .record-val { font-size: 12px; color: #1a1a1a; flex: 1; word-break: break-all; font-family: monospace; }
   .record-time { font-size: 11px; color: #aaa; white-space: nowrap; }
   .record-del { font-size: 11px; color: #c03030; cursor: pointer; background: none; border: none; padding: 2px 6px; }
@@ -130,12 +223,11 @@ const SUPABASE_URL = 'https://puydipjoykvwzpwnjedi.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_yZeJG14bj8esqS9D743ymA_1eYH64CG';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 列名对应你在 Supabase 创建的字段
-const COL_POSITION  = 'position';   // 座位位置
-const COL_VALUE     = 'no.pièce';  // 扫描内容 (text)
-const COL_SCANNED   = 'date';       // 时间 (timestamptz)
+const COL_POSITION = 'position';
+const COL_VALUE    = 'no.pièce';
+const COL_SCANNED  = 'date';
 
-const SEAT_COUNT = 5;
+const SEAT_ORDER = [5,4,3,2,1];
 const FACES = ['top','right','bottom','left'];
 const FACE_LABEL = {top:'上', right:'右', bottom:'下', left:'左'};
 
@@ -151,22 +243,26 @@ const dataStore = {};
 function buildTable() {
   const box = document.getElementById('table-box');
   box.innerHTML = '';
-  for (let s = 1; s <= SEAT_COUNT; s++) {
+  SEAT_ORDER.forEach(s => {
     const seat = document.createElement('div');
     seat.className = 'seat';
     seat.innerHTML = `
-      <div class="seat-num">座位 ${s}</div>
+      <div class="seat-num">${s}</div>
       <div class="seat-grid" id="seat-grid-${s}">
-        <div class="seat-frame"></div>
-        <div class="seat-inner"></div>
-        <div class="seat-center">${s}</div>
-        ${FACES.map(f => `
-          <div class="side-strip strip-${f}" id="strip-${s}-${f}" onclick="selectFace(${s},'${f}')"></div>
-          <div class="data-dot dot-${f}" id="dot-${s}-${f}" style="display:none"></div>
-        `).join('')}
+        <div class="frame-outer"></div>
+        <div class="frame-bevel"></div>
+        <div class="frame-center">${s}</div>
+        <div class="side-strip strip-top"    id="strip-${s}-top"    onclick="selectFace(${s},'top')"></div>
+        <div class="side-strip strip-bottom" id="strip-${s}-bottom" onclick="selectFace(${s},'bottom')"></div>
+        <div class="side-strip strip-left"   id="strip-${s}-left"   onclick="selectFace(${s},'left')"></div>
+        <div class="side-strip strip-right"  id="strip-${s}-right"  onclick="selectFace(${s},'right')"></div>
+        <div class="data-dot dot-top"    id="dot-${s}-top"    style="display:none"></div>
+        <div class="data-dot dot-bottom" id="dot-${s}-bottom" style="display:none"></div>
+        <div class="data-dot dot-left"   id="dot-${s}-left"   style="display:none"></div>
+        <div class="data-dot dot-right"  id="dot-${s}-right"  style="display:none"></div>
       </div>`;
     box.appendChild(seat);
-  }
+  });
 }
 
 function selectFace(seat, face) {
@@ -210,7 +306,7 @@ async function loadRecords() {
 }
 
 function updateDots() {
-  for (let s = 1; s <= SEAT_COUNT; s++) {
+  SEAT_ORDER.forEach(s => {
     FACES.forEach(f => {
       const key = `seat${s}_${f}`;
       const dot = document.getElementById(`dot-${s}-${f}`);
@@ -219,7 +315,7 @@ function updateDots() {
       if (dataStore[key]) { dot.style.display = ''; strip.classList.add('has-data'); }
       else { dot.style.display = 'none'; strip.classList.remove('has-data'); }
     });
-  }
+  });
 }
 
 function setSyncStatus(text, type) {
