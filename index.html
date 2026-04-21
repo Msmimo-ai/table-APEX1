@@ -445,7 +445,13 @@ function saveManual() {
 
 async function saveValue(val) {
   setStatus('Enregistrement en cours…', '');
-  const row = { [COL_POSITION]: activeKey, [COL_VALUE]: val, [COL_SCANNED]: new Date().toISOString() };
+  const now = new Date();
+  const localStr = now.toLocaleString('sv-SE', {timeZone:'America/Toronto'}).replace(' ', 'T');
+  const offset = -now.toLocaleString('en-CA', {timeZone:'America/Toronto', timeZoneName:'shortOffset'}).match(/GMT([+-]\d+)/)[1];
+  const pad = n => String(Math.abs(n)).padStart(2,'0');
+  const sign = offset <= 0 ? '+' : '-';
+  const edtStr = localStr + sign + pad(Math.floor(Math.abs(offset))) + ':00';
+  const row = { [COL_POSITION]: activeKey, [COL_VALUE]: val, [COL_SCANNED]: edtStr };
   const { data, error } = await sb.from('scans').insert(row).select().single();
   if (error) {
     setStatus('Erreur : ' + error.message, 'err');
@@ -487,7 +493,7 @@ function renderRecords(records) {
     const key = r[COL_POSITION] || '';
     const val = r[COL_VALUE] || '';
     const rawTime = r[COL_SCANNED];
-    const time = rawTime ? new Date(rawTime).toLocaleString('fr-CA', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+    const time = rawTime ? new Date(rawTime).toLocaleString('fr-CA', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'America/Toronto'}) : '';
     return `<div class="record-item">
       <span class="record-seat">${key}</span>
       <span class="record-val">${val}</span>
@@ -510,3 +516,4 @@ loadRecords();
 </script>
 </body>
 </html>
+
