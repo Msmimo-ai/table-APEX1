@@ -1,92 +1,121 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="fr">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>APEX 1</title>
 <style>
   :root {
-    --bg: #1a1c1e;
-    --bg2: #22262b;
-    --bg3: #2c3138;
-    --border: #3a3f47;
-    --accent: #e8a020;
-    --accent2: #c87d10;
-    --purple: #7c6fcd;
-    --green: #3dba6e;
-    --red: #e05252;
-    --text: #d4d8de;
-    --text2: #8a9099;
-    --text3: #555d68;
-    --strip: #383d45;
-    --strip-hover: #4a5260;
-    --strip-active: #7c6fcd;
-    --strip-fresh: #3dba6e;
-    --corner: #2e333a;
+    --bg: #ffffff;
+    --bg2: #f4f4f2;
+    --bg3: #e8e8e5;
+    --border: #d0d0cc;
+    --accent: #c87d10;
+    --accent2: #a86200;
+    --purple: #5a4fb0;
+    --green: #2e9e56;
+    --red: #c03030;
+    --text: #1a1a1a;
+    --text2: #555555;
+    --text3: #999999;
+    --strip: #cccccc;
+    --strip-hover: #b0b0b0;
+    --strip-active: #5a4fb0;
+    --strip-fresh: #2e9e56;
+    --corner: #bbbbbb;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'SF Mono', 'Consolas', monospace; background: var(--bg); color: var(--text); min-height: 100vh; }
-  .container { padding: 1.4rem 1.2rem; max-width: 700px; margin: 0 auto; }
+  .container { padding: 1.4rem 1.2rem; max-width: 760px; margin: 0 auto; }
 
-  /* Header */
-  .header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.6rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+  .header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.4rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
   .header-title { font-size: 11px; letter-spacing: 0.15em; color: var(--text2); text-transform: uppercase; }
   .header-badge { background: var(--accent); color: #111; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 2px; letter-spacing: 0.08em; }
   .header-line { flex: 1; height: 1px; background: var(--border); }
 
-  /* Table section */
-  .table-wrap { display: flex; align-items: center; gap: 14px; margin-bottom: 1.6rem; }
-  .apex-tag { background: transparent; border: 1.5px solid var(--accent); color: var(--accent); font-size: 10px; font-weight: 700; padding: 5px 10px; letter-spacing: 0.12em; white-space: nowrap; }
-  .table-outer { flex: 1; }
+  .legend { display: flex; gap: 20px; margin-bottom: 1.2rem; padding: 8px 12px; background: var(--bg2); border: 1px solid var(--border); }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 9px; color: var(--text2); letter-spacing: 0.08em; text-transform: uppercase; }
+  .legend-swatch { width: 10px; height: 10px; flex-shrink: 0; }
+
+  .table-wrap { display: flex; align-items: center; gap: 14px; margin-bottom: 1.4rem; }
+  .apex-tag { background: transparent; border: 1.5px solid var(--accent); color: var(--accent); font-size: 10px; font-weight: 700; padding: 5px 10px; letter-spacing: 0.12em; white-space: nowrap; text-align: center; line-height: 1.6; }
+  .table-outer { flex: 1; min-width: 0; }
   .dir-label { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; color: var(--accent); text-align: center; padding: 3px 0; }
-  .table-box { border: 1.5px solid var(--border); background: var(--bg2); padding: 10px 8px; display: flex; gap: 6px; justify-content: center; position: relative; }
+  .table-box { border: 1.5px solid var(--border); background: var(--bg2); padding: 10px 6px; display: flex; gap: 5px; justify-content: center; position: relative; overflow-x: auto; }
   .table-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0.4; }
 
   /* Seat */
-  .seat { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .seat { display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; }
   .seat-num { font-size: 9px; font-weight: 700; color: var(--text3); letter-spacing: 0.1em; }
 
   .seat-grid {
-    width: 72px; height: 98px;
+    width: 80px; height: 110px;
     position: relative;
     background: var(--bg3);
     border: 1px solid var(--border);
   }
 
+  /* White center — shows seat number */
   .frame-center {
     position: absolute;
-    top: 13px; bottom: 13px; left: 13px; right: 13px;
+    top: 22px; bottom: 22px; left: 14px; right: 14px;
     background: var(--bg);
     display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 700; color: var(--text3);
+    font-size: 14px; font-weight: 700; color: var(--text3);
     pointer-events: none; z-index: 1;
     border: 1px solid var(--border);
-    letter-spacing: 0.05em;
   }
 
-  /* Long sides */
+  /* Long sides — full height, show scanned value vertically */
   .strip-left, .strip-right {
-    position: absolute; top: 0; bottom: 0; width: 13px;
+    position: absolute; top: 0; bottom: 0; width: 14px;
     cursor: pointer; z-index: 3;
     background: var(--strip);
     transition: background 0.1s;
-    border: none;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
   }
   .strip-left  { left: 0; border-right: 1px solid var(--border); }
   .strip-right { right: 0; border-left: 1px solid var(--border); }
 
-  /* Short sides */
+  /* Short sides — between long sides, show scanned value horizontally */
   .strip-top, .strip-bottom {
-    position: absolute; left: 13px; right: 13px; height: 13px;
+    position: absolute; left: 14px; right: 14px; height: 22px;
     cursor: pointer; z-index: 3;
     background: var(--strip);
     transition: background 0.1s;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
   }
   .strip-top    { top: 0; border-bottom: 1px solid var(--border); }
   .strip-bottom { bottom: 0; border-top: 1px solid var(--border); }
 
-  /* Corner fills */
-  .corner { position: absolute; width: 13px; height: 13px; background: var(--corner); pointer-events: none; z-index: 2; }
+  /* Value label inside strip */
+  .strip-val {
+    font-size: 7px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.02em;
+    pointer-events: none;
+    line-height: 1.1;
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0 1px;
+  }
+  /* Vertical text for long sides */
+  .strip-left .strip-val,
+  .strip-right .strip-val {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    white-space: nowrap;
+    max-height: 100%;
+    padding: 2px 0;
+  }
+
+  .corner { position: absolute; width: 14px; height: 22px; background: var(--corner); pointer-events: none; z-index: 2; }
   .corner-tl { top: 0; left: 0; } .corner-tr { top: 0; right: 0; }
   .corner-bl { bottom: 0; left: 0; } .corner-br { bottom: 0; right: 0; }
 
@@ -102,13 +131,7 @@
   .strip-top.fresh, .strip-bottom.fresh {
     background: var(--strip-fresh) !important;
     box-shadow: 0 0 10px rgba(61,186,110,0.5) !important;
-    transition: background 0.1s;
   }
-
-  /* Legend */
-  .legend { display: flex; gap: 20px; margin-bottom: 1.2rem; padding: 8px 12px; background: var(--bg2); border: 1px solid var(--border); }
-  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 9px; color: var(--text2); letter-spacing: 0.08em; text-transform: uppercase; }
-  .legend-swatch { width: 10px; height: 10px; }
 
   /* Panel */
   .panel { background: var(--bg2); border: 1px solid var(--border); padding: 1.2rem; margin-bottom: 1rem; }
@@ -120,7 +143,6 @@
   .status.ok { color: var(--green); }
   .status.err { color: var(--red); }
 
-  /* Camera */
   .cam-area { position: relative; width: 100%; aspect-ratio: 4/3; background: #000; overflow: hidden; border: 1px solid var(--border); }
   video { width: 100%; height: 100%; object-fit: cover; display: block; }
   .scan-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
@@ -128,9 +150,8 @@
   .scan-line { position: absolute; left: 0; right: 0; height: 1.5px; background: var(--accent); animation: scanline 1.2s ease-in-out infinite; box-shadow: 0 0 6px var(--accent); }
   @keyframes scanline { 0%,100%{top:5%} 50%{top:90%} }
   .found-flash { position: absolute; inset: 0; background: rgba(61,186,110,0.3); opacity: 0; transition: opacity 0.1s; }
-  .fps-badge { position: absolute; top: 6px; right: 8px; background: rgba(0,0,0,0.7); color: var(--accent); font-size: 10px; padding: 2px 6px; font-family: monospace; letter-spacing: 0.05em; }
+  .fps-badge { position: absolute; top: 6px; right: 8px; background: rgba(0,0,0,0.7); color: var(--accent); font-size: 10px; padding: 2px 6px; font-family: monospace; }
 
-  /* Buttons */
   .btn-row { display: flex; gap: 8px; margin-top: 0.8rem; flex-wrap: wrap; }
   button { font-family: inherit; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 8px 16px; border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; transition: all 0.1s; }
   button:hover { border-color: var(--text2); background: var(--bg3); }
@@ -139,27 +160,24 @@
   button.danger { border-color: var(--red); color: var(--red); }
   button.danger:hover { background: var(--red); color: #fff; }
 
-  /* Input */
   .input-row { display: flex; gap: 8px; margin-top: 0.8rem; }
-  input[type=text] { flex: 1; font-family: inherit; font-size: 12px; padding: 8px 10px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); outline: none; letter-spacing: 0.03em; }
+  input[type=text] { flex: 1; font-family: inherit; font-size: 12px; padding: 8px 10px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); outline: none; }
   input[type=text]:focus { border-color: var(--purple); }
   input[type=text]::placeholder { color: var(--text3); }
 
-  /* Records */
   .record-list { display: flex; flex-direction: column; gap: 4px; margin-top: 0.6rem; max-height: 300px; overflow-y: auto; }
   .record-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--bg3); border-left: 2px solid var(--purple); }
-  .record-seat { font-size: 10px; font-weight: 700; color: var(--purple); min-width: 72px; white-space: nowrap; letter-spacing: 0.05em; text-transform: uppercase; }
+  .record-seat { font-size: 10px; font-weight: 700; color: var(--purple); min-width: 56px; white-space: nowrap; letter-spacing: 0.05em; text-transform: uppercase; }
   .record-val { font-size: 11px; color: var(--text); flex: 1; word-break: break-all; }
   .record-time { font-size: 10px; color: var(--text3); white-space: nowrap; }
-  .record-del { font-size: 10px; color: var(--red); cursor: pointer; background: none; border: none; padding: 2px 6px; font-family: inherit; text-transform: uppercase; letter-spacing: 0.05em; }
+  .record-del { font-size: 10px; color: var(--red); cursor: pointer; background: none; border: none; padding: 2px 6px; font-family: inherit; text-transform: uppercase; }
   .record-del:hover { background: var(--red); color: #fff; }
 
   .sync-badge { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
-  .sync-badge.ok  { color: var(--green); }
+  .sync-badge.ok { color: var(--green); }
   .sync-badge.err { color: var(--red); }
   .sync-badge.loading { color: var(--text3); }
 
-  /* Scrollbar */
   .record-list::-webkit-scrollbar { width: 3px; }
   .record-list::-webkit-scrollbar-track { background: var(--bg2); }
   .record-list::-webkit-scrollbar-thumb { background: var(--border); }
@@ -194,7 +212,7 @@
       <div class="panel-label">Position active</div>
       <span class="panel-tag" id="active-tag" style="display:none"></span>
     </div>
-    <p class="panel-empty" id="hint-text">Sélectionnez un côté</p>
+    <p class="panel-empty" id="hint-text">Sélectionnez un côté sur le plan</p>
     <div id="scan-section" style="display:none">
       <div class="cam-area" id="cam-area" style="display:none">
         <video id="video" playsinline autoplay muted></video>
@@ -215,7 +233,7 @@
         <button class="danger" onclick="clearActive()" style="margin-left:auto">✕ Effacer</button>
       </div>
       <div class="input-row" id="manual-row" style="display:none">
-        <input type="text" id="manual-input" placeholder="Entrer le contenu..."/>
+        <input type="text" id="manual-input" placeholder="Saisir le contenu…"/>
         <button class="primary" onclick="saveManual()">OK</button>
       </div>
     </div>
@@ -223,7 +241,7 @@
 
   <div class="panel">
     <div class="panel-header">
-      <div class="panel-label">Historique</div>
+      <div class="panel-label">Historique des scans</div>
       <span class="sync-badge loading" id="sync-status">Chargement…</span>
     </div>
     <div class="record-list" id="record-list">
@@ -246,14 +264,15 @@ const COL_SCANNED  = 'date';
 
 const SEAT_ORDER = [5,4,3,2,1];
 const FACES = ['top','right','bottom','left'];
-const FACE_LABEL = { top:'NORD', right:'EST', bottom:'SUD', left:'OUEST' };
 const FACE_CODE  = { top:'N', right:'E', bottom:'S', left:'O' };
 const FACE_TYPE  = { top:'EF', right:'RF', bottom:'EF', left:'RF' };
+const FACE_LABEL = { top:'NORD', right:'EST', bottom:'SUD', left:'OUEST' };
+
 function makePos(seat, face) { return seat + FACE_TYPE[face] + FACE_CODE[face]; }
 function parsePos(pos) {
   const m = pos.match(/^(\d+)(EF|RF)(N|S|E|O)$/);
-  if (!m) return [null,null];
-  const faceMap = {N:'top',S:'bottom',E:'right',O:'left'};
+  if (!m) return [null, null];
+  const faceMap = { N:'top', S:'bottom', E:'right', O:'left' };
   return [m[1], faceMap[m[3]]];
 }
 
@@ -276,23 +295,29 @@ function buildTable() {
         <div class="corner corner-tl"></div><div class="corner corner-tr"></div>
         <div class="corner corner-bl"></div><div class="corner corner-br"></div>
         <div class="frame-center">${s}</div>
-        <div class="strip-left"   id="strip-${s}-left"   onclick="selectFace(${s},'left')"></div>
-        <div class="strip-right"  id="strip-${s}-right"  onclick="selectFace(${s},'right')"></div>
-        <div class="strip-top"    id="strip-${s}-top"    onclick="selectFace(${s},'top')"></div>
-        <div class="strip-bottom" id="strip-${s}-bottom" onclick="selectFace(${s},'bottom')"></div>
+        <div class="strip-left"   id="strip-${s}-left"   onclick="selectFace(${s},'left')">  <span class="strip-val" id="val-${s}-left"></span></div>
+        <div class="strip-right"  id="strip-${s}-right"  onclick="selectFace(${s},'right')"> <span class="strip-val" id="val-${s}-right"></span></div>
+        <div class="strip-top"    id="strip-${s}-top"    onclick="selectFace(${s},'top')">   <span class="strip-val" id="val-${s}-top"></span></div>
+        <div class="strip-bottom" id="strip-${s}-bottom" onclick="selectFace(${s},'bottom')"><span class="strip-val" id="val-${s}-bottom"></span></div>
       </div>`;
     box.appendChild(seat);
   });
 }
 
+function updateStripValue(seat, face, val) {
+  const el = document.getElementById(`val-${seat}-${face}`);
+  if (!el) return;
+  el.textContent = val ? val.slice(0, 8) : '';
+}
+
 function selectFace(seat, face) {
   if (activeKey) {
-    const [ps, pf] = parseKey(activeKey);
+    const [ps, pf] = parsePos(activeKey);
     document.getElementById(`strip-${ps}-${pf}`)?.classList.remove('active');
   }
   activeKey = makePos(seat, face);
   document.getElementById(`strip-${seat}-${face}`)?.classList.add('active');
-  const label = makePos(seat, face);
+  const label = `${makePos(seat, face)} · ${FACE_LABEL[face]}`;
   document.getElementById('active-tag').textContent = label;
   document.getElementById('active-tag').style.display = '';
   document.getElementById('hint-text').style.display = 'none';
@@ -302,8 +327,6 @@ function selectFace(seat, face) {
   stopScan();
   document.getElementById('manual-row').style.display = 'none';
 }
-
-function parseKey(key) { return parsePos(key); }
 
 function flashGreen(seat, face) {
   const strip = document.getElementById(`strip-${seat}-${face}`);
@@ -326,13 +349,20 @@ function setSyncStatus(text, type) {
 
 async function loadRecords() {
   setSyncStatus('Sync…', 'loading');
-  const { data, error } = await sb.from('scans').select('*').order('id', { ascending: false }).limit(500);
+  const { data, error } = await sb.from('scans').select('*').order('id', { ascending: false }).limit(40);
   if (error) { setSyncStatus('Erreur', 'err'); return; }
   setSyncStatus('Synchronisé ✓', 'ok');
   Object.keys(dataStore).forEach(k => delete dataStore[k]);
   (data || []).forEach(r => {
     const key = r[COL_POSITION];
     if (key && !dataStore[key]) dataStore[key] = { value: r[COL_VALUE], id: r.id };
+  });
+  // Update strip labels
+  SEAT_ORDER.forEach(s => {
+    FACES.forEach(f => {
+      const key = makePos(s, f);
+      updateStripValue(s, f, dataStore[key]?.value || '');
+    });
   });
   renderRecords(data || []);
 }
@@ -351,7 +381,7 @@ async function startScan() {
     scanning = true;
     document.getElementById('scan-btn').textContent = '■ Stop';
     document.getElementById('scan-btn').onclick = stopScan;
-    setStatus('Pointez le QR code…', '');
+    setStatus('Pointez le QR code vers la caméra…', '');
     fpsLast = performance.now(); fpsFrames = 0;
     tick(video);
   } catch(e) {
@@ -414,7 +444,7 @@ function saveManual() {
 }
 
 async function saveValue(val) {
-  setStatus('Enregistrement…', '');
+  setStatus('Enregistrement en cours…', '');
   const row = { [COL_POSITION]: activeKey, [COL_VALUE]: val, [COL_SCANNED]: new Date().toISOString() };
   const { data, error } = await sb.from('scans').insert(row).select().single();
   if (error) {
@@ -422,8 +452,9 @@ async function saveValue(val) {
   } else {
     dataStore[activeKey] = { value: val, id: data.id };
     setStatus('✓ Enregistré : ' + val, 'ok');
-    const [seat, face] = parseKey(activeKey);
+    const [seat, face] = parsePos(activeKey);
     flashGreen(seat, face);
+    updateStripValue(seat, face, val);
     loadRecords();
   }
 }
@@ -433,13 +464,19 @@ async function clearActive() {
   setStatus('Suppression…', '');
   await sb.from('scans').delete().eq(COL_POSITION, activeKey);
   delete dataStore[activeKey];
+  const [seat, face] = parsePos(activeKey);
+  updateStripValue(seat, face, '');
   setStatus('Effacé', '');
   loadRecords();
 }
 
 async function deleteRecord(id, key) {
   await sb.from('scans').delete().eq('id', id);
-  if (dataStore[key]?.id === id) delete dataStore[key];
+  if (dataStore[key]?.id === id) {
+    delete dataStore[key];
+    const [seat, face] = parsePos(key);
+    updateStripValue(seat, face, '');
+  }
   loadRecords();
 }
 
@@ -448,13 +485,11 @@ function renderRecords(records) {
   if (!records.length) { list.innerHTML = '<p class="panel-empty">Aucun enregistrement</p>'; return; }
   list.innerHTML = records.map(r => {
     const key = r[COL_POSITION] || '';
-    const m = key.match(/^seat(\d+)_(\w+)$/);
-    const label = key;
     const val = r[COL_VALUE] || '';
     const rawTime = r[COL_SCANNED];
     const time = rawTime ? new Date(rawTime).toLocaleString('fr-CA', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
     return `<div class="record-item">
-      <span class="record-seat">${label}</span>
+      <span class="record-seat">${key}</span>
       <span class="record-val">${val}</span>
       <span class="record-time">${time}</span>
       <button class="record-del" onclick="deleteRecord('${r.id}','${key}')">✕</button>
