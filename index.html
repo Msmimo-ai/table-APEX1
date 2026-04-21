@@ -247,6 +247,15 @@ const COL_SCANNED  = 'date';
 const SEAT_ORDER = [5,4,3,2,1];
 const FACES = ['top','right','bottom','left'];
 const FACE_LABEL = { top:'NORD', right:'EST', bottom:'SUD', left:'OUEST' };
+const FACE_CODE  = { top:'N', right:'E', bottom:'S', left:'O' };
+const FACE_TYPE  = { top:'EF', right:'RF', bottom:'EF', left:'RF' };
+function makePos(seat, face) { return seat + FACE_TYPE[face] + FACE_CODE[face]; }
+function parsePos(pos) {
+  const m = pos.match(/^(\d+)(EF|RF)(N|S|E|O)$/);
+  if (!m) return [null,null];
+  const faceMap = {N:'top',S:'bottom',E:'right',O:'left'};
+  return [m[1], faceMap[m[3]]];
+}
 
 let activeKey = null;
 let scanning = false, rafId = null, currentStream = null;
@@ -281,9 +290,9 @@ function selectFace(seat, face) {
     const [ps, pf] = parseKey(activeKey);
     document.getElementById(`strip-${ps}-${pf}`)?.classList.remove('active');
   }
-  activeKey = `seat${seat}_${face}`;
+  activeKey = makePos(seat, face);
   document.getElementById(`strip-${seat}-${face}`)?.classList.add('active');
-  const label = `S${seat} · ${FACE_LABEL[face]}`;
+  const label = makePos(seat, face);
   document.getElementById('active-tag').textContent = label;
   document.getElementById('active-tag').style.display = '';
   document.getElementById('hint-text').style.display = 'none';
@@ -294,10 +303,7 @@ function selectFace(seat, face) {
   document.getElementById('manual-row').style.display = 'none';
 }
 
-function parseKey(key) {
-  const m = key.match(/^seat(\d+)_(\w+)$/);
-  return [m[1], m[2]];
-}
+function parseKey(key) { return parsePos(key); }
 
 function flashGreen(seat, face) {
   const strip = document.getElementById(`strip-${seat}-${face}`);
@@ -443,7 +449,7 @@ function renderRecords(records) {
   list.innerHTML = records.map(r => {
     const key = r[COL_POSITION] || '';
     const m = key.match(/^seat(\d+)_(\w+)$/);
-    const label = m ? `S${m[1]}·${FACE_LABEL[m[2]]||m[2]}` : key;
+    const label = key;
     const val = r[COL_VALUE] || '';
     const rawTime = r[COL_SCANNED];
     const time = rawTime ? new Date(rawTime).toLocaleString('fr-CA', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
