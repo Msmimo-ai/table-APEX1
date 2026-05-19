@@ -441,20 +441,23 @@ function saveManual() {
 }
 
 async function saveValue(val) {
-  // Validate: content must be numeric
-  const num = parseInt(val.trim(), 10);
+  // Validate: must be numeric only
+  const trimmed = val.trim();
+  if (!/^\d+$/.test(trimmed)) {
+    setStatus('❌ Résultat inconnu du scan.', 'err');
+    return;
+  }
+  const num = parseInt(trimmed, 10);
   const isEF = activeKey.includes('EF');
   const isRF = activeKey.includes('RF');
-  if (!isNaN(num)) {
-    const isOdd = num % 2 !== 0;
-    if (isEF && !isOdd) {
-      setStatus('❌ C’est une face de laminage.', 'err');
-      return;
-    }
-    if (isRF && isOdd) {
-      setStatus('❌ C’est une petite face.', 'err');
-      return;
-    }
+  const isOdd = num % 2 !== 0;
+  if (isEF && !isOdd) {
+    setStatus('❌ C’est une face de laminage.', 'err');
+    return;
+  }
+  if (isRF && isOdd) {
+    setStatus('❌ C’est une petite face.', 'err');
+    return;
   }
   setStatus('Enregistrement en cours…', '');
   const now = new Date();
