@@ -217,6 +217,17 @@
 
   <div class="panel">
     <div class="sync-row">
+      <div class="panel-label-lg">Instantané</div>
+    </div>
+    <div class="snapshot-input-row">
+      <input type="datetime-local" id="snapshot-dt" />
+      <button class="primary" onclick="loadSnapshot()">Afficher</button>
+    </div>
+    <div id="snapshot-result"></div>
+  </div>
+
+  <div class="panel">
+    <div class="sync-row">
       <div class="panel-label-lg">Historique</div>
       <span class="sync-badge loading" id="sync-status">Chargement…</span>
     </div>
@@ -498,6 +509,60 @@ function renderRecords(records) {
   }).join('');
 }
 
+async function loadSnapshot() {
+  const dtInput = document.getElementById('snapshot-dt').value;
+  const resultDiv = document.getElementById('snapshot-result');
+  if (!dtInput) {
+    resultDiv.innerHTML = '<p class="snap-empty">Veuillez sélectionner une date et heure.</p>';
+    return;
+  }
+  // Convert local datetime to EDT string for comparison
+  const chosen = new Date(dtInput);
+  const chosenEdt = chosen.toLocaleString('sv-SE', { timeZone: 'America/Toronto' });
+  resultDiv.innerHTML = '<p class="snap-empty">Chargement…</p>';
+
+  // For each position, get the latest record before or at chosen time
+  const { data, error } = await sb.from('scans').select('*').lte(COL_SCANNED, chosenEdt).order(COL_SCANNED, { ascending: false });
+  if (error) { resultDiv.innerHTML = '<p class="snap-empty">Erreur : ' + error.message + '</p>'; return; }
+
+  // Build map: position -> latest value at that time
+  const snap = {};
+  (data || []).forEach(r => {
+    if (r[COL_POSITION] && !snap[r[COL_POSITION]]) {
+      snap[r[COL_POSITION]] = r[COL_VALUE];
+    }
+  });
+
+  // Render 5 seat diagrams
+  const seatsHtml = SEAT_ORDER.map(s => {
+    const strips = FACES.map(f => {
+      const key = makePos(s, f);
+      const val = snap[key] || '';
+      const filled = val ? 'filled' : '';
+      const shortVal = val ? val.slice(0, 6) : '';
+      if (f === 'left')   return `<div class="snap-strip-left ${filled}"><span class="snap-val">${shortVal}</span></div>`;
+      if (f === 'right')  return `<div class="snap-strip-right ${filled}"><span class="snap-val">${shortVal}</span></div>`;
+      if (f === 'top')    return `<div class="snap-strip-top ${filled}"><span class="snap-val">${shortVal}</span></div>`;
+      if (f === 'bottom') return `<div class="snap-strip-bottom ${filled}"><span class="snap-val">${shortVal}</span></div>`;
+    }).join('');
+    return `<div class="snap-seat">
+      <div class="snap-seat-num">#${s}</div>
+      <div class="snap-grid">
+        <div class="snap-corner tl"></div><div class="snap-corner tr"></div>
+        <div class="snap-corner bl"></div><div class="snap-corner br"></div>
+        <div class="snap-center">${s}</div>
+        ${strips}
+      </div>
+    </div>`;
+  }).join('');
+
+  resultDiv.innerHTML = `
+    <div class="snap-dir">— NORD —</div>
+    <div class="snap-table-box">${seatsHtml}</div>
+    <div class="snap-dir">— SUD —</div>`;
+}
+
+window.loadSnapshot = loadSnapshot;
 window.selectFace = selectFace;
 window.startScan = startScan;
 window.stopScan = stopScan;
