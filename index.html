@@ -436,11 +436,11 @@ async function saveValue(val) {
   const isRF = activeKey.includes('RF');
   const isOdd = num % 2 !== 0;
   if (isEF && !isOdd) {
-    setStatus('❌ C\'est une face de laminage.', 'err');
+    setStatus('❌ Le code scanné est une face de laminage.', 'err');
     return;
   }
   if (isRF && isOdd) {
-    setStatus('❌ C\'est une petite face.', 'err');
+    setStatus('❌ Le code scanné est une petite face.', 'err');
     return;
   }
   setStatus('Enregistrement en cours…', '');
