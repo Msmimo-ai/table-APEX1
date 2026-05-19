@@ -42,17 +42,17 @@
   .seat { display: flex; flex-direction: column; align-items: center; gap: 5px; flex-shrink: 0; }
   .seat-num { font-size: 13px; font-weight: 700; color: #000; }
 
-  .seat-grid { width: 56px; height: 80px; position: relative; background: var(--bg3); border: 1px solid #aaa; }
+  .seat-grid { width: 68px; height: 96px; position: relative; background: var(--bg3); border: 1px solid #aaa; }
 
   .frame-center {
-    position: absolute; top: 16px; bottom: 16px; left: 10px; right: 10px;
+    position: absolute; top: 18px; bottom: 18px; left: 13px; right: 13px;
     background: #fff; display: flex; align-items: center; justify-content: center;
     font-size: 13px; font-weight: 700; color: #aaa;
     pointer-events: none; z-index: 1; border: 1px solid #ccc;
   }
 
   .strip-left, .strip-right {
-    position: absolute; top: 0; bottom: 0; width: 10px;
+    position: absolute; top: 0; bottom: 0; width: 13px;
     cursor: pointer; z-index: 3; background: var(--strip);
     display: flex; align-items: center; justify-content: center; overflow: hidden;
     transition: background 0.1s;
@@ -61,7 +61,7 @@
   .strip-right { right: 0; }
 
   .strip-top, .strip-bottom {
-    position: absolute; left: 10px; right: 10px; height: 16px;
+    position: absolute; left: 13px; right: 13px; height: 18px;
     cursor: pointer; z-index: 3; background: var(--strip);
     display: flex; align-items: center; justify-content: center; overflow: hidden;
     transition: background 0.1s;
@@ -70,7 +70,7 @@
   .strip-bottom { bottom: 0; }
 
   .strip-val {
-    font-size: 6px; font-weight: 700; color: #000;
+    font-size: 9px; font-weight: 900; color: #000;
     pointer-events: none; overflow: hidden; text-overflow: ellipsis;
     white-space: nowrap; padding: 0 1px; text-align: center;
   }
@@ -78,7 +78,7 @@
     writing-mode: vertical-rl; white-space: nowrap; max-height: 100%; padding: 2px 0;
   }
 
-  .corner { position: absolute; width: 10px; height: 16px; background: var(--corner); pointer-events: none; z-index: 2; }
+  .corner { position: absolute; width: 13px; height: 18px; background: var(--corner); pointer-events: none; z-index: 2; }
   .corner-tl { top: 0; left: 0; } .corner-tr { top: 0; right: 0; }
   .corner-bl { bottom: 0; left: 0; } .corner-br { bottom: 0; right: 0; }
 
