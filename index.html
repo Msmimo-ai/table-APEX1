@@ -530,7 +530,7 @@ async function saveValue(val) {
 async function clearActive() {
   if (!activeKey) return;
   setStatus('Suppression…', '');
-  await fetch(SUPABASE_URL + '/rest/v1/scans?' + encodeURIComponent(COL_POSITION) + '=eq.' + encodeURIComponent(activeKey), {
+  await fetch(SUPABASE_URL + '/rest/v1/scans?position=eq.' + encodeURIComponent(activeKey), {
     method: 'DELETE',
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
   });
@@ -584,7 +584,7 @@ async function loadSnapshot() {
 
   // Use native fetch to avoid DataCloneError on mobile browsers
   try {
-    const url = SUPABASE_URL + '/rest/v1/scans?select=*&' + encodeURIComponent(COL_SCANNED) + '=lte.' + encodeURIComponent(chosenEdt) + '&order=' + encodeURIComponent(COL_SCANNED) + '.desc&limit=1000';
+    const url = SUPABASE_URL + '/rest/v1/scans?select=*&date=lte.' + encodeURIComponent(chosenEdt) + '&order=date.desc&limit=1000';
     const res = await fetch(url, {
       method: 'GET',
       mode: 'cors',
