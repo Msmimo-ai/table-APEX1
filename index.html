@@ -161,6 +161,36 @@
   .sync-badge.ok      { color: var(--green); }
   .sync-badge.err     { color: var(--red); }
   .sync-badge.loading { color: #aaa; }
+
+  /* Snapshot panel */
+  .snapshot-input-row { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .snapshot-input-row input[type=datetime-local] {
+    flex: 1; font-family: inherit; font-size: 15px;
+    padding: 12px 14px; border-radius: 8px;
+    border: 2px solid var(--border); background: #fff; color: #000;
+    outline: none; -webkit-appearance: none; min-width: 0;
+  }
+  .snapshot-input-row input[type=datetime-local]:focus { border-color: var(--purple); }
+  .snap-empty { font-size: 15px; color: #888; font-style: italic; text-align: center; padding: 12px 0; }
+  .snap-dir { font-size: 13px; font-weight: 700; letter-spacing: 0.12em; color: #000; text-align: center; padding: 5px 0; text-transform: uppercase; }
+  .snap-table-box { border: 2px solid #aaa; background: var(--bg2); padding: 10px 8px; display: flex; gap: 6px; justify-content: center; border-radius: 4px; overflow-x: auto; margin-top: 4px; }
+  .snap-seat { display: flex; flex-direction: column; align-items: center; gap: 5px; flex-shrink: 0; }
+  .snap-seat-num { font-size: 13px; font-weight: 700; color: #000; }
+  .snap-grid { width: 68px; height: 96px; position: relative; background: var(--bg3); border: 1px solid #aaa; }
+  .snap-center { position: absolute; top: 18px; bottom: 18px; left: 13px; right: 13px; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #aaa; border: 1px solid #ccc; pointer-events: none; z-index: 1; }
+  .snap-strip-left, .snap-strip-right { position: absolute; top: 0; bottom: 0; width: 13px; z-index: 3; display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--strip); }
+  .snap-strip-left { left: 0; }
+  .snap-strip-right { right: 0; }
+  .snap-strip-top, .snap-strip-bottom { position: absolute; left: 13px; right: 13px; height: 18px; z-index: 3; display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--strip); }
+  .snap-strip-top { top: 0; }
+  .snap-strip-bottom { bottom: 0; }
+  .snap-corner { position: absolute; width: 13px; height: 18px; background: var(--corner); pointer-events: none; z-index: 4; }
+  .snap-corner.tl { top: 0; left: 0; } .snap-corner.tr { top: 0; right: 0; }
+  .snap-corner.bl { bottom: 0; left: 0; } .snap-corner.br { bottom: 0; right: 0; }
+  .snap-strip-left.filled, .snap-strip-right.filled,
+  .snap-strip-top.filled, .snap-strip-bottom.filled { background: var(--green); }
+  .snap-val { font-size: 9px; font-weight: 900; color: #fff; pointer-events: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 1px; text-align: center; }
+  .snap-strip-left .snap-val, .snap-strip-right .snap-val { writing-mode: vertical-rl; white-space: nowrap; max-height: 100%; padding: 2px 0; }
 </style>
 </head>
 <body>
@@ -217,7 +247,7 @@
 
   <div class="panel">
     <div class="sync-row">
-      <div class="panel-label-lg">Instantané</div>
+      <div class="panel-label-lg">Recherche</div>
     </div>
     <div class="snapshot-input-row">
       <input type="datetime-local" id="snapshot-dt" />
@@ -516,50 +546,64 @@ async function loadSnapshot() {
     resultDiv.innerHTML = '<p class="snap-empty">Veuillez sélectionner une date et heure.</p>';
     return;
   }
-  // Convert local datetime to EDT string for comparison
   const chosen = new Date(dtInput);
   const chosenEdt = chosen.toLocaleString('sv-SE', { timeZone: 'America/Toronto' });
   resultDiv.innerHTML = '<p class="snap-empty">Chargement…</p>';
 
-  // For each position, get the latest record before or at chosen time
-  const { data, error } = await sb.from('scans').select('*').lte(COL_SCANNED, chosenEdt).order(COL_SCANNED, { ascending: false });
-  if (error) { resultDiv.innerHTML = '<p class="snap-empty">Erreur : ' + error.message + '</p>'; return; }
+  // Use native fetch to avoid DataCloneError on mobile browsers
+  try {
+    const url = SUPABASE_URL + '/rest/v1/scans?select=*&' + encodeURIComponent(COL_SCANNED) + '=lte.' + encodeURIComponent(chosenEdt) + '&order=' + encodeURIComponent(COL_SCANNED) + '.desc&limit=1000';
+    const res = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+    if (!res.ok) { resultDiv.innerHTML = '<p class="snap-empty">Erreur : ' + res.status + '</p>'; return; }
+    const data = await res.json();
 
-  // Build map: position -> latest value at that time
-  const snap = {};
-  (data || []).forEach(r => {
-    if (r[COL_POSITION] && !snap[r[COL_POSITION]]) {
-      snap[r[COL_POSITION]] = r[COL_VALUE];
-    }
-  });
+    // Build map: position -> latest value at that time
+    const snap = {};
+    (data || []).forEach(r => {
+      if (r[COL_POSITION] && !snap[r[COL_POSITION]]) {
+        snap[r[COL_POSITION]] = r[COL_VALUE];
+      }
+    });
 
-  // Render 5 seat diagrams
-  const seatsHtml = SEAT_ORDER.map(s => {
-    const strips = FACES.map(f => {
-      const key = makePos(s, f);
-      const val = snap[key] || '';
-      const filled = val ? 'filled' : '';
-      const shortVal = val ? val.slice(0, 6) : '';
-      if (f === 'left')   return `<div class="snap-strip-left ${filled}"><span class="snap-val">${shortVal}</span></div>`;
-      if (f === 'right')  return `<div class="snap-strip-right ${filled}"><span class="snap-val">${shortVal}</span></div>`;
-      if (f === 'top')    return `<div class="snap-strip-top ${filled}"><span class="snap-val">${shortVal}</span></div>`;
-      if (f === 'bottom') return `<div class="snap-strip-bottom ${filled}"><span class="snap-val">${shortVal}</span></div>`;
+    // Render 5 seat diagrams
+    const seatsHtml = SEAT_ORDER.map(s => {
+      const strips = FACES.map(f => {
+        const key = makePos(s, f);
+        const val = snap[key] || '';
+        const filled = val ? 'filled' : '';
+        const shortVal = val ? val.slice(0, 6) : '';
+        if (f === 'left')   return `<div class="snap-strip-left ${filled}"><span class="snap-val">${shortVal}</span></div>`;
+        if (f === 'right')  return `<div class="snap-strip-right ${filled}"><span class="snap-val">${shortVal}</span></div>`;
+        if (f === 'top')    return `<div class="snap-strip-top ${filled}"><span class="snap-val">${shortVal}</span></div>`;
+        if (f === 'bottom') return `<div class="snap-strip-bottom ${filled}"><span class="snap-val">${shortVal}</span></div>`;
+      }).join('');
+      return `<div class="snap-seat">
+        <div class="snap-seat-num">#${s}</div>
+        <div class="snap-grid">
+          <div class="snap-corner tl"></div><div class="snap-corner tr"></div>
+          <div class="snap-corner bl"></div><div class="snap-corner br"></div>
+          <div class="snap-center">${s}</div>
+          ${strips}
+        </div>
+      </div>`;
     }).join('');
-    return `<div class="snap-seat">
-      <div class="snap-seat-num">#${s}</div>
-      <div class="snap-grid">
-        <div class="snap-corner tl"></div><div class="snap-corner tr"></div>
-        <div class="snap-corner bl"></div><div class="snap-corner br"></div>
-        <div class="snap-center">${s}</div>
-        ${strips}
-      </div>
-    </div>`;
-  }).join('');
 
-  resultDiv.innerHTML = `
-    <div class="snap-dir">— NORD —</div>
-    <div class="snap-table-box">${seatsHtml}</div>
-    <div class="snap-dir">— SUD —</div>`;
+    resultDiv.innerHTML = `
+      <div class="snap-dir">— NORD —</div>
+      <div class="snap-table-box">${seatsHtml}</div>
+      <div class="snap-dir">— SUD —</div>`;
+  } catch(e) {
+    resultDiv.innerHTML = '<p class="snap-empty">Erreur : ' + e.message + '</p>';
+  }
 }
 
 window.loadSnapshot = loadSnapshot;
