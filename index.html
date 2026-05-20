@@ -373,21 +373,34 @@ function setSyncStatus(text, type) {
 
 async function loadRecords() {
   setSyncStatus('Sync…', 'loading');
-  const { data, error } = await sb.from('scans').select('*').order('id', { ascending: false }).limit(40);
-  if (error) { setSyncStatus('Erreur', 'err'); return; }
-  setSyncStatus('Synchronisé ✓', 'ok');
-  Object.keys(dataStore).forEach(k => delete dataStore[k]);
-  (data || []).forEach(r => {
-    const key = r[COL_POSITION];
-    if (key && !dataStore[key]) dataStore[key] = { value: r[COL_VALUE], id: r.id };
-  });
-  SEAT_ORDER.forEach(s => {
-    FACES.forEach(f => {
-      const key = makePos(s, f);
-      updateStripValue(s, f, dataStore[key]?.value || '');
+  try {
+    const url = SUPABASE_URL + '/rest/v1/scans?select=*&order=id.desc&limit=40';
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Accept': 'application/json'
+      }
     });
-  });
-  renderRecords(data || []);
+    if (!res.ok) { setSyncStatus('Erreur ' + res.status, 'err'); return; }
+    const data = await res.json();
+    setSyncStatus('Synchronisé ✓', 'ok');
+    Object.keys(dataStore).forEach(k => delete dataStore[k]);
+    (data || []).forEach(r => {
+      const key = r[COL_POSITION];
+      if (key && !dataStore[key]) dataStore[key] = { value: r[COL_VALUE], id: r.id };
+    });
+    SEAT_ORDER.forEach(s => {
+      FACES.forEach(f => {
+        const key = makePos(s, f);
+        updateStripValue(s, f, dataStore[key]?.value || '');
+      });
+    });
+    renderRecords(data || []);
+  } catch(e) {
+    setSyncStatus('Erreur : ' + e.message, 'err');
+  }
 }
 
 async function startScan() {
@@ -488,23 +501,39 @@ async function saveValue(val) {
   const now = new Date();
   const edtStr = now.toLocaleString('sv-SE', { timeZone: 'America/Toronto' });
   const row = { [COL_POSITION]: activeKey, [COL_VALUE]: trimmed, [COL_SCANNED]: edtStr };
-  const { data, error } = await sb.from('scans').insert(row).select().single();
-  if (error) {
-    setStatus('Erreur : ' + error.message, 'err');
-  } else {
-    dataStore[activeKey] = { value: trimmed, id: data.id };
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/scans', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify(row)
+    });
+    if (!res.ok) { const e = await res.json(); setStatus('Erreur : ' + (e.message||res.status), 'err'); return; }
+    const data = await res.json();
+    const saved = Array.isArray(data) ? data[0] : data;
+    dataStore[activeKey] = { value: trimmed, id: saved.id };
     setStatus('✓ Enregistré : ' + trimmed, 'ok');
     const [seat, face] = parsePos(activeKey);
     flashGreen(seat, face);
     updateStripValue(seat, face, trimmed);
     loadRecords();
+  } catch(e) {
+    setStatus('Erreur : ' + e.message, 'err');
   }
 }
 
 async function clearActive() {
   if (!activeKey) return;
   setStatus('Suppression…', '');
-  await sb.from('scans').delete().eq(COL_POSITION, activeKey);
+  await fetch(SUPABASE_URL + '/rest/v1/scans?' + encodeURIComponent(COL_POSITION) + '=eq.' + encodeURIComponent(activeKey), {
+    method: 'DELETE',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+  });
   delete dataStore[activeKey];
   const [seat, face] = parsePos(activeKey);
   updateStripValue(seat, face, '');
@@ -513,7 +542,10 @@ async function clearActive() {
 }
 
 async function deleteRecord(id, key) {
-  await sb.from('scans').delete().eq('id', id);
+  await fetch(SUPABASE_URL + '/rest/v1/scans?id=eq.' + id, {
+    method: 'DELETE',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+  });
   if (dataStore[key]?.id === id) {
     delete dataStore[key];
     const [seat, face] = parsePos(key);
