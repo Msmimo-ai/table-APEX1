@@ -374,7 +374,7 @@ function setSyncStatus(text, type) {
 async function loadRecords() {
   setSyncStatus('Sync…', 'loading');
   try {
-    const url = SUPABASE_URL + '/rest/v1/scans?select=*&order=id.desc&limit=40';
+    const url = SUPABASE_URL + '/rest/v1/scans?select=*&order=date.desc&limit=40';
     const res = await fetch(url, {
       method: 'GET',
       headers: {
@@ -389,7 +389,7 @@ async function loadRecords() {
     Object.keys(dataStore).forEach(k => delete dataStore[k]);
     (data || []).forEach(r => {
       const key = r[COL_POSITION];
-      if (key && !dataStore[key]) dataStore[key] = { value: r[COL_VALUE], id: r.id };
+      if (key && !dataStore[key]) dataStore[key] = { value: r[COL_VALUE], date: r[COL_SCANNED] };
     });
     SEAT_ORDER.forEach(s => {
       FACES.forEach(f => {
@@ -516,7 +516,7 @@ async function saveValue(val) {
     if (!res.ok) { const e = await res.json(); setStatus('Erreur : ' + (e.message||res.status), 'err'); return; }
     const data = await res.json();
     const saved = Array.isArray(data) ? data[0] : data;
-    dataStore[activeKey] = { value: trimmed, id: saved.id };
+    dataStore[activeKey] = { value: trimmed, date: saved ? saved[COL_SCANNED] : edtStr };
     setStatus('✓ Enregistré : ' + trimmed, 'ok');
     const [seat, face] = parsePos(activeKey);
     flashGreen(seat, face);
@@ -541,16 +541,14 @@ async function clearActive() {
   loadRecords();
 }
 
-async function deleteRecord(id, key) {
-  await fetch(SUPABASE_URL + '/rest/v1/scans?id=eq.' + id, {
+async function deleteRecord(dateVal, key) {
+  await fetch(SUPABASE_URL + '/rest/v1/scans?position=eq.' + encodeURIComponent(key) + '&date=eq.' + encodeURIComponent(dateVal), {
     method: 'DELETE',
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
   });
-  if (dataStore[key]?.id === id) {
-    delete dataStore[key];
-    const [seat, face] = parsePos(key);
-    updateStripValue(seat, face, '');
-  }
+  delete dataStore[key];
+  const [seat, face] = parsePos(key);
+  updateStripValue(seat, face, '');
   loadRecords();
 }
 
@@ -566,7 +564,7 @@ function renderRecords(records) {
       <span class="record-seat">${key}</span>
       <span class="record-val">${val}</span>
       <span class="record-time">${time}</span>
-      <button class="record-del" onclick="deleteRecord('${r.id}','${key}')">✕</button>
+      <button class="record-del" onclick="deleteRecord('${rawTime}','${key}')">✕</button>
     </div>`;
   }).join('');
 }
