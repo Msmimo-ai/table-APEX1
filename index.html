@@ -374,7 +374,7 @@ function setSyncStatus(text, type) {
 async function loadRecords() {
   setSyncStatus('Sync…', 'loading');
   try {
-    const url = SUPABASE_URL + '/rest/v1/scans?select=*&order=date.desc&limit=40';
+    const url = SUPABASE_URL + '/rest/v1/APEX1?select=*&order=date.desc&limit=40';
     const res = await fetch(url, {
       method: 'GET',
       headers: {
@@ -502,7 +502,7 @@ async function saveValue(val) {
   const edtStr = now.toLocaleString('sv-SE', { timeZone: 'America/Toronto' });
   const row = { [COL_POSITION]: activeKey, [COL_VALUE]: trimmed, [COL_SCANNED]: edtStr };
   try {
-    const res = await fetch(SUPABASE_URL + '/rest/v1/scans', {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/APEX1', {
       method: 'POST',
       headers: {
         'apikey': SUPABASE_KEY,
@@ -530,7 +530,7 @@ async function saveValue(val) {
 async function clearActive() {
   if (!activeKey) return;
   setStatus('Suppression…', '');
-  await fetch(SUPABASE_URL + '/rest/v1/scans?position=eq.' + encodeURIComponent(activeKey), {
+  await fetch(SUPABASE_URL + '/rest/v1/APEX1?position=eq.' + encodeURIComponent(activeKey), {
     method: 'DELETE',
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
   });
@@ -542,7 +542,7 @@ async function clearActive() {
 }
 
 async function deleteRecord(dateVal, key) {
-  await fetch(SUPABASE_URL + '/rest/v1/scans?position=eq.' + encodeURIComponent(key) + '&date=eq.' + encodeURIComponent(dateVal), {
+  await fetch(SUPABASE_URL + '/rest/v1/APEX1?position=eq.' + encodeURIComponent(key) + '&date=eq.' + encodeURIComponent(dateVal), {
     method: 'DELETE',
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
   });
@@ -582,7 +582,7 @@ async function loadSnapshot() {
 
   // Use native fetch to avoid DataCloneError on mobile browsers
   try {
-    const url = SUPABASE_URL + '/rest/v1/scans?select=*&date=lte.' + encodeURIComponent(chosenEdt) + '&order=date.desc&limit=1000';
+    const url = SUPABASE_URL + '/rest/v1/APEX1?select=*&date=lte.' + encodeURIComponent(chosenEdt) + '&order=date.desc&limit=1000';
     const res = await fetch(url, {
       method: 'GET',
       mode: 'cors',
