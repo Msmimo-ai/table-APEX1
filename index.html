@@ -662,7 +662,10 @@ async function loadSnapshot() {
 
 window.loadSnapshot = loadSnapshot;
 
+let tableauOpen = false;
+
 async function refreshTableau() {
+  if (!tableauOpen) return;
   document.getElementById('tableau-status').style.display = '';
   document.getElementById('tableau-status').textContent = 'Mise à jour…';
   document.getElementById('tableau-content').innerHTML = '';
@@ -671,10 +674,12 @@ async function refreshTableau() {
 
 async function toggleTableau() {
   const container = document.getElementById('tableau-container');
-  if (container.style.display === 'block') {
+  if (tableauOpen) {
+    tableauOpen = false;
     container.style.display = 'none';
     return;
   }
+  tableauOpen = true;
   container.style.display = 'block';
   document.getElementById('tableau-status').style.display = '';
   document.getElementById('tableau-status').textContent = 'Chargement…';
