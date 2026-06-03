@@ -543,6 +543,9 @@ async function saveValue(val, source = 'scan') {
     flashGreen(seat, face);
     updateStripValue(seat, face, trimmed);
     loadRecords();
+    // Refresh tableau if open
+    const tc = document.getElementById('tableau-container');
+    if (tc && tc.style.display === 'block') refreshTableau();
   } catch(e) {
     setStatus('Erreur : ' + e.message, 'err');
   }
@@ -659,6 +662,13 @@ async function loadSnapshot() {
 
 window.loadSnapshot = loadSnapshot;
 
+async function refreshTableau() {
+  document.getElementById('tableau-status').style.display = '';
+  document.getElementById('tableau-status').textContent = 'Mise à jour…';
+  document.getElementById('tableau-content').innerHTML = '';
+  await loadTableauData();
+}
+
 async function toggleTableau() {
   const container = document.getElementById('tableau-container');
   if (container.style.display === 'block') {
@@ -669,7 +679,10 @@ async function toggleTableau() {
   document.getElementById('tableau-status').style.display = '';
   document.getElementById('tableau-status').textContent = 'Chargement…';
   document.getElementById('tableau-content').innerHTML = '';
+  await loadTableauData();
+}
 
+async function loadTableauData() {
   try {
     // Fetch all data from both tables
     const [res1, res2] = await Promise.all([
@@ -764,6 +777,7 @@ async function toggleTableau() {
 }
 
 window.toggleTableau = toggleTableau;
+window.refreshTableau = refreshTableau;
 window.selectFace = selectFace;
 window.startScan = startScan;
 window.stopScan = stopScan;
