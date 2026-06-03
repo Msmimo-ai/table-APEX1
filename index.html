@@ -191,6 +191,19 @@
   .snap-strip-top.filled, .snap-strip-bottom.filled { background: var(--green); }
   .snap-val { font-size: 9px; font-weight: 900; color: #fff; pointer-events: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 1px; text-align: center; }
   .snap-strip-left .snap-val, .snap-strip-right .snap-val { writing-mode: vertical-rl; white-space: nowrap; max-height: 100%; padding: 2px 0; }
+
+  /* Tableau de pièce */
+  .tableau-btn { width: 100%; font-size: 16px; font-weight: 700; padding: 14px; border-radius: 8px; border: 2px solid #c87d10; background: #fff8ee; color: #c87d10; cursor: pointer; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .tableau-btn:active { background: #c87d10; color: #fff; }
+  .tableau-container { display: none; margin-top: 12px; }
+  .tableau-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .tableau-table th { background: #f0f0f0; padding: 8px 6px; border: 1px solid #ddd; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+  .tableau-table td { padding: 8px 6px; border: 1px solid #ddd; vertical-align: top; }
+  .tableau-table tr:nth-child(even) { background: #f9f9f9; }
+  .tableau-empty { font-size: 14px; color: #888; font-style: italic; text-align: center; padding: 12px 0; }
+  .tableau-loading { font-size: 14px; color: #888; text-align: center; padding: 12px 0; }
+  .badge-apex { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; background: #c87d10; color: #fff; }
+  .still-on { font-size: 11px; color: #2e9e56; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -263,6 +276,14 @@
     </div>
     <div class="record-list" id="record-list">
       <p class="panel-empty">Aucun enregistrement</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <button class="tableau-btn" onclick="toggleTableau()">📋 Tableau de pièce</button>
+    <div class="tableau-container" id="tableau-container">
+      <p class="tableau-loading" id="tableau-status">Chargement…</p>
+      <div id="tableau-content"></div>
     </div>
   </div>
 
@@ -637,6 +658,112 @@ async function loadSnapshot() {
 }
 
 window.loadSnapshot = loadSnapshot;
+
+async function toggleTableau() {
+  const container = document.getElementById('tableau-container');
+  if (container.style.display === 'block') {
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = 'block';
+  document.getElementById('tableau-status').style.display = '';
+  document.getElementById('tableau-status').textContent = 'Chargement…';
+  document.getElementById('tableau-content').innerHTML = '';
+
+  try {
+    // Fetch all data from both tables
+    const [res1, res2] = await Promise.all([
+      fetch(SUPABASE_URL + '/rest/v1/APEX1?select=*&order=date.asc', {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Accept': 'application/json' }
+      }),
+      fetch(SUPABASE_URL + '/rest/v1/APEX2?select=*&order=date.asc', {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Accept': 'application/json' }
+      })
+    ]);
+
+    const data1 = await res1.json();
+    const data2 = await res2.json();
+
+    // Tag each record with apex
+    const all = [
+      ...(data1 || []).map(r => ({ ...r, _apex: 'APEX 1' })),
+      ...(data2 || []).map(r => ({ ...r, _apex: 'APEX 2' }))
+    ].sort((a, b) => a.date > b.date ? 1 : -1);
+
+    if (!all.length) {
+      document.getElementById('tableau-status').textContent = 'Aucun enregistrement.';
+      return;
+    }
+
+    // Group by part number — full journey across both APEX tables
+    const byPiece = {};
+    all.forEach(r => {
+      const piece = r['no.pièce'];
+      if (!byPiece[piece]) byPiece[piece] = [];
+      byPiece[piece].push(r);
+    });
+
+    // Build rows: for each part number, group consecutive same position+apex
+    const rows = [];
+    Object.entries(byPiece).forEach(([piece, scans]) => {
+      // scans already sorted by date asc
+      let i = 0;
+      while (i < scans.length) {
+        const curPos = scans[i].position;
+        const curApex = scans[i]._apex;
+        const installDate = scans[i].date;
+        // Find end of consecutive same position+apex for this part
+        let j = i;
+        while (j < scans.length && scans[j].position === curPos && scans[j]._apex === curApex) j++;
+        // maintenance date = when it moved to a different position/apex
+        const maintenanceDate = j < scans.length ? scans[j].date : null;
+        rows.push({ piece, position: curPos, apex: curApex, installDate, maintenanceDate });
+        i = j;
+      }
+    });
+
+    // Sort by part number, then by installDate
+    rows.sort((a, b) => {
+      if (a.piece !== b.piece) return parseInt(a.piece) - parseInt(b.piece);
+      return a.installDate > b.installDate ? 1 : -1;
+    });
+
+    if (!rows.length) {
+      document.getElementById('tableau-status').textContent = 'Aucun enregistrement.';
+      return;
+    }
+
+    document.getElementById('tableau-status').style.display = 'none';
+    document.getElementById('tableau-content').innerHTML = `
+      <div style="overflow-x:auto">
+        <table class="tableau-table">
+          <thead>
+            <tr>
+              <th>No. Pièce</th>
+              <th>Position</th>
+              <th>APEX</th>
+              <th>Date d'installation</th>
+              <th>Date de maintenance</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => `
+              <tr>
+                <td><strong>${r.piece}</strong></td>
+                <td>${r.position}</td>
+                <td><span class="badge-apex">${r.apex}</span></td>
+                <td>${r.installDate || ''}</td>
+                <td>${r.maintenanceDate ? r.maintenanceDate : '<span class="still-on">En service</span>'}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch(e) {
+    document.getElementById('tableau-status').textContent = 'Erreur : ' + e.message;
+  }
+}
+
+window.toggleTableau = toggleTableau;
 window.selectFace = selectFace;
 window.startScan = startScan;
 window.stopScan = stopScan;
