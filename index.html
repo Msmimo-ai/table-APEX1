@@ -699,8 +699,19 @@ async function loadTableauData() {
       })
     ]);
 
+    if (!res1.ok || !res2.ok) {
+      const errText = !res1.ok ? await res1.text() : await res2.text();
+      document.getElementById('tableau-status').textContent = 'Erreur API : ' + errText;
+      return;
+    }
+
     const data1 = await res1.json();
     const data2 = await res2.json();
+
+    if (!Array.isArray(data1) || !Array.isArray(data2)) {
+      document.getElementById('tableau-status').textContent = 'Erreur : réponse invalide. ' + JSON.stringify(data1) + JSON.stringify(data2);
+      return;
+    }
 
     // Tag each record with apex
     const all = [
