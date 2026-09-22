@@ -292,7 +292,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
-const SUPABASE_URL = ' https://zkulkxmwgfkgsdmfuohc.supabase.co';
+const SUPABASE_URL = 'https://zkulkxmwgfkgsdmfuohc.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InprdWxreG13Z2ZrZ3NkbWZ1b2hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwOTUzNTQsImV4cCI6MjEwNTY3MTM1NH0.VYMqY5GRrmEVCLpg1HOE9A5xTkpT61l2bc-_zunhQOA';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -408,9 +408,19 @@ async function loadRecords() {
     const data = await res.json();
     setSyncStatus('Synchronisé ✓', 'ok');
     Object.keys(dataStore).forEach(k => delete dataStore[k]);
+    // data trié par date décroissante -> 1re occurrence = la plus récente
+    const latestForPart = {}; // pièce -> position de sa lecture la plus récente
     (data || []).forEach(r => {
       const key = r[COL_POSITION];
-      if (key && !dataStore[key]) dataStore[key] = { value: r[COL_VALUE], date: r[COL_SCANNED] };
+      const part = r[COL_VALUE];
+      if (key && !dataStore[key]) dataStore[key] = { value: part, date: r[COL_SCANNED] };
+      if (part != null && latestForPart[part] === undefined) latestForPart[part] = key;
+    });
+    // Une pièce n'appartient qu'à sa position la plus récente : si elle a été
+    // rescannée ailleurs, l'ancienne position est maintenant vide.
+    Object.keys(dataStore).forEach(key => {
+      const part = dataStore[key].value;
+      if (part != null && latestForPart[part] !== key) delete dataStore[key];
     });
     SEAT_ORDER.forEach(s => {
       FACES.forEach(f => {
@@ -622,10 +632,18 @@ async function loadSnapshot() {
 
     // Build map: position -> latest value at that time
     const snap = {};
+    const latestForPart = {}; // pièce -> position de sa lecture la plus récente (à cette date)
     (data || []).forEach(r => {
-      if (r[COL_POSITION] && !snap[r[COL_POSITION]]) {
-        snap[r[COL_POSITION]] = r[COL_VALUE];
-      }
+      const pos = r[COL_POSITION];
+      const part = r[COL_VALUE];
+      if (pos && !snap[pos]) snap[pos] = part;
+      if (part != null && latestForPart[part] === undefined) latestForPart[part] = pos;
+    });
+    // Une pièce n'apparaît qu'à sa position la plus récente ; les positions
+    // qu'elle a quittées sont vides.
+    Object.keys(snap).forEach(pos => {
+      const part = snap[pos];
+      if (part != null && latestForPart[part] !== pos) delete snap[pos];
     });
 
     // Render 5 seat diagrams
